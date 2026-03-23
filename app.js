@@ -4,6 +4,7 @@ const events = [
     artist: 'だうく / ゆちかみ / 〇〇',
     place: '浅草橋マンホール',
     area: '東京',
+    date: '2026-06-07',
     time: '13:00 OPEN / 13:30 START',
     price: '3,500円',
     tag: 'チケット発売中',
@@ -18,6 +19,7 @@ const events = [
     artist: 'だうく / ゆちかみ / 〇〇',
     place: '浅草橋マンホール',
     area: '名古屋',
+    date: '2026-10-07',
     time: '13:00 OPEN / 13:30 START',
     price: '3,500円',
     tag: 'チケット発売中',
@@ -128,3 +130,106 @@ searchInput.addEventListener('keydown', (e) => {
 
 renderEvents(events);
 renderVideos(videos);
+
+function renderWeekSchedule() {
+  if (!scheduleGrid) return;
+
+  const startDate = new Date('2026-06-01'); // 表示したい週の月曜に変更
+  const weekDays = [];
+
+  for (let i = 0; i < 7; i++) {
+    const current = new Date(startDate);
+    current.setDate(startDate.getDate() + i);
+
+    const yyyy = current.getFullYear();
+    const mm = String(current.getMonth() + 1).padStart(2, '0');
+    const dd = String(current.getDate()).padStart(2, '0');
+    const dateString = `${yyyy}-${mm}-${dd}`;
+
+    weekDays.push({
+      day: formatJapaneseWeekday(current),
+      date: current.getDate(),
+      events: getEventsByDate(dateString)
+    });
+  }
+
+  scheduleGrid.className = 'schedule-grid week-mode';
+  scheduleGrid.innerHTML = weekDays.map(item => `
+    <div class="schedule-card">
+      <p class="schedule-day">${item.day}</p>
+      <div class="schedule-date">${item.date}</div>
+      <div class="schedule-event-list">
+        ${item.events.length
+          ? item.events.map(event => `<p class="schedule-text">${event.title}</p>`).join('')
+          : `<p class="schedule-text empty-text">予定なし</p>`
+        }
+      </div>
+    </div>
+  `).join('');
+
+  if (weekViewBtn) weekViewBtn.classList.add('active');
+  if (monthViewBtn) monthViewBtn.classList.remove('active');
+}
+
+function renderMonthSchedule() {
+  if (!scheduleGrid) return;
+
+  const firstDay = new Date(calendarYear, calendarMonth - 1, 1);
+  const lastDate = new Date(calendarYear, calendarMonth, 0).getDate();
+  const startWeekday = (firstDay.getDay() + 6) % 7; // 月曜始まりに変換
+
+  const cells = [];
+
+  for (let i = 0; i < startWeekday; i++) {
+    cells.push({ date: '', events: [] });
+  }
+
+  for (let day = 1; day <= lastDate; day++) {
+    const yyyy = calendarYear;
+    const mm = String(calendarMonth).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const dateString = `${yyyy}-${mm}-${dd}`;
+
+    cells.push({
+      date: day,
+      events: getEventsByDate(dateString)
+    });
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push({ date: '', events: [] });
+  }
+
+  scheduleGrid.className = 'schedule-grid month-mode';
+  scheduleGrid.innerHTML = `
+    <div class="month-weekday">月</div>
+    <div class="month-weekday">火</div>
+    <div class="month-weekday">水</div>
+    <div class="month-weekday">木</div>
+    <div class="month-weekday">金</div>
+    <div class="month-weekday">土</div>
+    <div class="month-weekday">日</div>
+
+    ${cells.map(cell => `
+      <div class="month-cell ${cell.date ? '' : 'empty'}">
+        ${cell.date ? `<div class="month-date">${cell.date}</div>` : ''}
+        <div class="month-event-list">
+          ${cell.events.map(event => `<p class="month-text">${event.title}</p>`).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  if (monthViewBtn) monthViewBtn.classList.add('active');
+  if (weekViewBtn) weekViewBtn.classList.remove('active');
+}
+
+if (weekViewBtn) {
+  weekViewBtn.addEventListener('click', renderWeekSchedule);
+}
+
+if (monthViewBtn) {
+  monthViewBtn.addEventListener('click', renderMonthSchedule);
+}
+
+renderWeekSchedule();
