@@ -362,6 +362,8 @@ nav a { color: var(--muted); font-weight: 500; }
   margin-bottom: 6px;
 }
 
+/* ===== 月選択UI ===== */
+
 .schedule-controls {
   display: flex;
   align-items: center;
@@ -370,23 +372,19 @@ nav a { color: var(--muted); font-weight: 500; }
 }
 
 .month-selector-wrap {
-  display: none;
+  display: none; /* 初期は非表示（今月ボタン押したら出る） */
   align-items: center;
   gap: 8px;
-}
-
-.month-label {
-  color: var(--muted);
-  font-size: 0.9rem;
 }
 
 .month-selector {
   background: rgba(255,255,255,0.06);
   border: 1px solid var(--line);
   color: #fff;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
   font-family: inherit;
+  cursor: pointer;
 }
 
 .month-selector option {
