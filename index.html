@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OshiHub | 推しの“今”が全部わかる</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo">OshiHub</div>
+      <nav>
+        <a href="#today">今日のライブ</a>
+        <a href="#videos">新着動画</a>
+        <a href="#artists">演者一覧</a>
+        <a href="#submit" class="nav-cta">掲載する</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <p class="eyebrow">歌い手・地下アイドル告知まとめサイト</p>
+        <h1>推しの“今”が<br>全部わかる</h1>
+        <p class="hero-text">ライブ情報も、歌ってみたも、配信告知も。<br>散らばった宣伝情報をひとつにまとめるポータルサイト。</p>
+
+        <div class="search-box">
+          <input id="searchInput" type="text" placeholder="アーティスト名 / 地域 / 会場で検索" />
+          <button id="searchButton">検索</button>
+        </div>
+
+        <div class="quick-filters">
+          <button class="filter-btn active" data-filter="all">すべて</button>
+          <button class="filter-btn" data-filter="東京">東京</button>
+          <button class="filter-btn" data-filter="名古屋">名古屋</button>
+          <button class="filter-btn" data-filter="大阪">大阪</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="today" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-label">LIVE</p>
+            <h2>今日のライブ</h2>
+          </div>
+          <a href="#calendar" class="text-link">カレンダーを見る</a>
+        </div>
+        <div id="eventGrid" class="card-grid"></div>
+      </div>
+    </section>
+
+    <section id="videos" class="section alt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-label">MOVIE</p>
+            <h2>新着動画</h2>
+          </div>
+        </div>
+        <div id="videoGrid" class="card-grid video-grid"></div>
+      </div>
+    </section>
+
+    <section id="calendar" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-label">SCHEDULE</p>
+            <h2>今週の予定</h2>
+          </div>
+        </div>
+        <div class="calendar-box">
+          <div class="calendar-row header-row">
+            <div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div><div>日</div>
+          </div>
+          <div class="calendar-row">
+            <div class="calendar-cell"><span class="day">23</span><p>歌ってみた公開</p></div>
+            <div class="calendar-cell"><span class="day">24</span><p>渋谷ライブ</p></div>
+            <div class="calendar-cell"><span class="day">25</span><p>配信告知</p></div>
+            <div class="calendar-cell"><span class="day">26</span><p>名古屋対バン</p></div>
+            <div class="calendar-cell"><span class="day">27</span><p>MV公開</p></div>
+            <div class="calendar-cell"><span class="day">28</span><p>大阪公演</p></div>
+            <div class="calendar-cell"><span class="day">29</span><p>オフ会</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="artists" class="section alt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-label">ARTISTS</p>
+            <h2>演者一覧</h2>
+          </div>
+        </div>
+        <div class="artist-list">
+          <div class="artist-card">
+            <div class="artist-icon">A</div>
+            <div>
+              <h3>Amane</h3>
+              <p>歌い手 / MV公開中</p>
+            </div>
+          </div>
+          <div class="artist-card">
+            <div class="artist-icon">L</div>
+            <div>
+              <h3>Luna*</h3>
+              <p>地下アイドル / 東京中心</p>
+            </div>
+          </div>
+          <div class="artist-card">
+            <div class="artist-icon">S</div>
+            <div>
+              <h3>Shion</h3>
+              <p>歌い手 / 配信・ライブ告知</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="submit" class="section cta-section">
+      <div class="container cta-box">
+        <div>
+          <p class="section-label">SUBMIT</p>
+          <h2>掲載したい方はこちら</h2>
+          <p>まずは Googleフォームで受付し、手動で掲載する形が一番始めやすいです。</p>
+        </div>
+        <a class="primary-btn" href="#">掲載フォームを作る</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 OshiHub</p>
+      <p>推し活がもっと楽になる場所</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
