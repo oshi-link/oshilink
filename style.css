@@ -230,4 +230,134 @@ nav a { color: var(--muted); font-weight: 500; }
   .card-grid, .artist-list { grid-template-columns: 1fr; }
   .section-head { align-items: start; flex-direction: column; }
   .footer-inner { flex-direction: column; gap: 6px; }
+
+.schedule-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.schedule-toggle {
+  display: flex;
+  gap: 10px;
+}
+
+.toggle-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.toggle-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  border: none;
+}
+
+.schedule-grid.week-mode {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.02);
+}
+
+.schedule-card {
+  min-height: 170px;
+  padding: 18px 14px;
+  border-right: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+}
+
+.schedule-card:last-child {
+  border-right: none;
+}
+
+.schedule-day {
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.schedule-date {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(139,92,246,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.schedule-event-list,
+.month-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedule-text {
+  color: #ddd;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.empty-text {
+  opacity: 0.45;
+}
+
+.schedule-grid.month-mode {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.02);
+}
+
+.month-weekday {
+  padding: 14px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.05);
+  border-right: 1px solid var(--line);
+}
+
+.month-weekday:nth-child(7) {
+  border-right: none;
+}
+
+.month-cell {
+  min-height: 130px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+}
+
+.month-cell:nth-child(7n) {
+  border-right: none;
+}
+
+.month-cell.empty {
+  background: rgba(255,255,255,0.01);
+}
+
+.month-date {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.month-text {
+  font-size: 0.82rem;
+  color: #ddd;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
 }
