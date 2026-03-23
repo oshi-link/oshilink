@@ -92,7 +92,7 @@ nav a { color: var(--muted); font-weight: 500; }
   box-shadow: var(--shadow);
 }
 .card-image {
-  height: 190px;
+  height: 220px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
