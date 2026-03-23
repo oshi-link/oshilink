@@ -21,7 +21,7 @@ const events = [
     time: '13:00 OPEN / 13:30 START',
     price: '3,500円',
     tag: 'チケット発売中',
-    image: 'images/IMG_6384 2.JPG',
+    image: 'images/IMG_6384.JPG',
 
     detailUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20',
     ticketUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20'
