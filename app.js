@@ -262,9 +262,17 @@ function renderMonthSchedule() {
   `;
 
   if (monthViewBtn) monthViewBtn.classList.add('active');
+  if (monthSelector) {
+  monthSelector.addEventListener('change', (e) => {
+    selectedCalendarMonth = Number(e.target.value);
+    renderMonthSchedule();
+  });
+}
   if (weekViewBtn) weekViewBtn.classList.remove('active');
   if (monthSelectorWrap) monthSelectorWrap.style.display = 'flex';
   if (monthSelector) monthSelector.value = String(month);
+
+  if (monthSelectorWrap) monthSelectorWrap.style.display = 'none';
 }
 
 renderEvents(events);
