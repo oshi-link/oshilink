@@ -1,30 +1,12 @@
 const events = [
   {
-    title: 'Shibuya Night Stage',
-    artist: 'Amane / Shion / Luna*',
-    place: '渋谷 Star Lounge',
+    title: 'Full course',
+    artist: 'だうく / ゆちかみ / 〇〇',
+    place: '浅草橋マンホール',
     area: '東京',
-    time: '18:00 OPEN / 18:30 START',
-    price: '前売 3,400円',
+    time: '13:00 OPEN / 13:30 START',
+    price: '3,500円',
     tag: 'チケット発売中'
-  },
-  {
-    title: 'Nagoya Idol Circuit',
-    artist: 'Luna* / Milky Parade',
-    place: '名古屋 CLUB ZION',
-    area: '名古屋',
-    time: '17:30 OPEN / 18:00 START',
-    price: '前売 2,800円',
-    tag: '注目イベント'
-  },
-  {
-    title: 'Osaka Uta Fes',
-    artist: 'Shion / Aster / Riku',
-    place: '心斎橋 VARON',
-    area: '大阪',
-    time: '16:30 OPEN / 17:00 START',
-    price: '前売 3,000円',
-    tag: '本日開催'
   }
 ];
 
