@@ -58,6 +58,12 @@ const scheduleGrid = document.getElementById('scheduleGrid');
 const weekViewBtn = document.getElementById('weekViewBtn');
 const monthViewBtn = document.getElementById('monthViewBtn');
 
+const monthSelector = document.getElementById('monthSelector');
+const monthSelectorWrap = document.getElementById('monthSelectorWrap');
+
+let selectedCalendarYear = 2026;
+let selectedCalendarMonth = 4;
+
 function renderEvents(list) {
   if (!eventGrid) return;
 
@@ -206,9 +212,8 @@ function renderWeekSchedule() {
 function renderMonthSchedule() {
   if (!scheduleGrid) return;
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
+  const year = selectedCalendarYear;
+  const month = selectedCalendarMonth;
 
   const firstDay = new Date(year, month - 1, 1);
   const lastDate = new Date(year, month, 0).getDate();
@@ -258,14 +263,8 @@ function renderMonthSchedule() {
 
   if (monthViewBtn) monthViewBtn.classList.add('active');
   if (weekViewBtn) weekViewBtn.classList.remove('active');
-}
-
-if (weekViewBtn) {
-  weekViewBtn.addEventListener('click', renderWeekSchedule);
-}
-
-if (monthViewBtn) {
-  monthViewBtn.addEventListener('click', renderMonthSchedule);
+  if (monthSelectorWrap) monthSelectorWrap.style.display = 'flex';
+  if (monthSelector) monthSelector.value = String(month);
 }
 
 renderEvents(events);
