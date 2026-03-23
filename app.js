@@ -7,6 +7,7 @@ const events = [
     time: '13:00 OPEN / 13:30 START',
     price: '3,500円',
     tag: 'チケット発売中'
+    image: 'images/Fullcorse_2025.jpg'
   }
 ];
 
@@ -40,7 +41,7 @@ const filterButtons = document.querySelectorAll('.filter-btn');
 function renderEvents(list) {
   eventGrid.innerHTML = list.map(item => `
     <article class="card">
-      <div class="card-image">
+      <div class="card-image" style="background-image: url('${item.image}')">
         <span class="badge">${item.tag}</span>
         <strong>${item.area}</strong>
       </div>
