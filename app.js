@@ -62,7 +62,7 @@ const monthSelector = document.getElementById('monthSelector');
 const monthSelectorWrap = document.getElementById('monthSelectorWrap');
 
 let selectedCalendarYear = 2026;
-let selectedCalendarMonth = 4;
+let selectedCalendarMonth = 1;
 
 function renderEvents(list) {
   if (!eventGrid) return;
@@ -217,7 +217,7 @@ function renderMonthSchedule() {
 
   const firstDay = new Date(year, month - 1, 1);
   const lastDate = new Date(year, month, 0).getDate();
-  const startWeekday = (firstDay.getDay() + 6) % 7; // 月曜始まり
+  const startWeekday = (firstDay.getDay() + 6) % 7;
 
   const cells = [];
 
@@ -252,26 +252,20 @@ function renderMonthSchedule() {
       <div class="month-cell ${cell.date ? '' : 'empty'}">
         ${cell.date ? `<div class="month-date">${cell.date}</div>` : ''}
         <div class="month-event-list">
-          ${cell.events.length
-            ? cell.events.map(event => `<p class="month-text">${event.title}</p>`).join('')
-            : ''
-          }
+          ${cell.events.map(event => `<p class="month-text">${event.title}</p>`).join('')}
         </div>
       </div>
     `).join('')}
   `;
 
-  if (monthViewBtn) monthViewBtn.classList.add('active');
+  if (monthSelectorWrap) monthSelectorWrap.style.display = 'flex';
   if (monthSelector) {
   monthSelector.addEventListener('change', (e) => {
     selectedCalendarMonth = Number(e.target.value);
     renderMonthSchedule();
   });
 }
-  if (weekViewBtn) weekViewBtn.classList.remove('active');
-  if (monthSelectorWrap) monthSelectorWrap.style.display = 'flex';
   if (monthSelector) monthSelector.value = String(month);
-
   if (monthSelectorWrap) monthSelectorWrap.style.display = 'none';
 }
 
