@@ -57,7 +57,7 @@ function renderEvents(list) {
           <span>🎫 ${item.price}</span>
         </div>
         <div class="card-actions">
-          <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
+          <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>,
           <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
         </div>
       </div>
