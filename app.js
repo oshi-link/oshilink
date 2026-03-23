@@ -268,6 +268,21 @@ function renderMonthSchedule() {
   if (monthSelectorWrap) monthSelectorWrap.style.display = 'none';
 }
 
+if (weekViewBtn) {
+  weekViewBtn.addEventListener('click', renderWeekSchedule);
+}
+
+if (monthViewBtn) {
+  monthViewBtn.addEventListener('click', renderMonthSchedule);
+}
+
+if (monthSelector) {
+  monthSelector.addEventListener('change', (e) => {
+    selectedCalendarMonth = Number(e.target.value);
+    renderMonthSchedule();
+  });
+}
+
 renderEvents(events);
 renderVideos(videos);
 renderWeekSchedule();
