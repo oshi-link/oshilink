@@ -9,12 +9,10 @@ const events = [
     price: '3,500円',
     tag: 'チケット発売中',
     image: 'images/Fullcorse_2025.JPG',
-
     detailUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20',
     ticketUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20'
   },
-
-    {
+  {
     title: 'Full course',
     artist: 'だうく / ゆちかみ / 〇〇',
     place: '浅草橋マンホール',
@@ -24,11 +22,9 @@ const events = [
     price: '3,500円',
     tag: 'チケット発売中',
     image: 'images/IMG_6384.JPG',
-
     detailUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20',
     ticketUrl: 'https://x.com/dauk_CA/status/2035861459037811193?s=20'
   }
-
 ];
 
 const videos = [
@@ -58,11 +54,17 @@ const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const filterButtons = document.querySelectorAll('.filter-btn');
 
+const scheduleGrid = document.getElementById('scheduleGrid');
+const weekViewBtn = document.getElementById('weekViewBtn');
+const monthViewBtn = document.getElementById('monthViewBtn');
+
 function renderEvents(list) {
+  if (!eventGrid) return;
+
   eventGrid.innerHTML = list.map(item => `
     <article class="card">
       <div class="card-image">
-        <img src="${item.image}" alt="">
+        <img src="${item.image}" alt="${item.title}">
         <span class="badge">${item.tag}</span>
       </div>
       <div class="card-body">
@@ -70,6 +72,7 @@ function renderEvents(list) {
         <div class="meta">
           <span>🎤 ${item.artist}</span>
           <span>📍 ${item.place}</span>
+          <span>📅 ${item.date}</span>
           <span>🕒 ${item.time}</span>
           <span>🎫 ${item.price}</span>
         </div>
@@ -83,6 +86,8 @@ function renderEvents(list) {
 }
 
 function renderVideos(list) {
+  if (!videoGrid) return;
+
   videoGrid.innerHTML = list.map(item => `
     <article class="card">
       <div class="card-image">
@@ -104,11 +109,18 @@ function renderVideos(list) {
 
 function applyFilter(area = 'all', keyword = '') {
   const key = keyword.trim().toLowerCase();
+
   const filtered = events.filter(item => {
     const matchesArea = area === 'all' || item.area === area;
-    const matchesKeyword = !key || [item.title, item.artist, item.place, item.area].join(' ').toLowerCase().includes(key);
+    const matchesKeyword =
+      !key || [item.title, item.artist, item.place, item.area, item.date]
+        .join(' ')
+        .toLowerCase()
+        .includes(key);
+
     return matchesArea && matchesKeyword;
   });
+
   renderEvents(filtered);
 }
 
@@ -123,31 +135,51 @@ filterButtons.forEach(btn => {
   });
 });
 
-searchButton.addEventListener('click', () => applyFilter(currentArea, searchInput.value));
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') applyFilter(currentArea, searchInput.value);
-});
+if (searchButton) {
+  searchButton.addEventListener('click', () => applyFilter(currentArea, searchInput.value));
+}
 
-renderEvents(events);
-renderVideos(videos);
+if (searchInput) {
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyFilter(currentArea, searchInput.value);
+  });
+}
+
+function getEventsByDate(dateString) {
+  return events.filter(event => event.date === dateString);
+}
+
+function formatDateString(year, month, day) {
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+}
 
 function renderWeekSchedule() {
   if (!scheduleGrid) return;
 
-  const startDate = new Date('2026-06-01'); // 表示したい週の月曜に変更
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0:日, 1:月...
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+
   const weekDays = [];
+  const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
 
   for (let i = 0; i < 7; i++) {
-    const current = new Date(startDate);
-    current.setDate(startDate.getDate() + i);
+    const current = new Date(monday);
+    current.setDate(monday.getDate() + i);
 
-    const yyyy = current.getFullYear();
-    const mm = String(current.getMonth() + 1).padStart(2, '0');
-    const dd = String(current.getDate()).padStart(2, '0');
-    const dateString = `${yyyy}-${mm}-${dd}`;
+    const dateString = formatDateString(
+      current.getFullYear(),
+      current.getMonth() + 1,
+      current.getDate()
+    );
 
     weekDays.push({
-      day: formatJapaneseWeekday(current),
+      day: weekdays[current.getDay()],
       date: current.getDate(),
       events: getEventsByDate(dateString)
     });
@@ -174,9 +206,13 @@ function renderWeekSchedule() {
 function renderMonthSchedule() {
   if (!scheduleGrid) return;
 
-  const firstDay = new Date(calendarYear, calendarMonth - 1, 1);
-  const lastDate = new Date(calendarYear, calendarMonth, 0).getDate();
-  const startWeekday = (firstDay.getDay() + 6) % 7; // 月曜始まりに変換
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDate = new Date(year, month, 0).getDate();
+  const startWeekday = (firstDay.getDay() + 6) % 7; // 月曜始まり
 
   const cells = [];
 
@@ -185,10 +221,7 @@ function renderMonthSchedule() {
   }
 
   for (let day = 1; day <= lastDate; day++) {
-    const yyyy = calendarYear;
-    const mm = String(calendarMonth).padStart(2, '0');
-    const dd = String(day).padStart(2, '0');
-    const dateString = `${yyyy}-${mm}-${dd}`;
+    const dateString = formatDateString(year, month, day);
 
     cells.push({
       date: day,
@@ -214,7 +247,10 @@ function renderMonthSchedule() {
       <div class="month-cell ${cell.date ? '' : 'empty'}">
         ${cell.date ? `<div class="month-date">${cell.date}</div>` : ''}
         <div class="month-event-list">
-          ${cell.events.map(event => `<p class="month-text">${event.title}</p>`).join('')}
+          ${cell.events.length
+            ? cell.events.map(event => `<p class="month-text">${event.title}</p>`).join('')
+            : ''
+          }
         </div>
       </div>
     `).join('')}
@@ -232,4 +268,6 @@ if (monthViewBtn) {
   monthViewBtn.addEventListener('click', renderMonthSchedule);
 }
 
+renderEvents(events);
+renderVideos(videos);
 renderWeekSchedule();
