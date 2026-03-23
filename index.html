@@ -68,30 +68,22 @@
       </div>
     </section>
 
-    <section id="calendar" class="section">
-      <div class="container">
-        <div class="section-head">
-          <div>
-            <p class="section-label">SCHEDULE</p>
-            <h2>今週の予定</h2>
-          </div>
-        </div>
-        <div class="calendar-box">
-          <div class="calendar-row header-row">
-            <div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div><div>日</div>
-          </div>
-          <div class="calendar-row">
-            <div class="calendar-cell"><span class="day">23</span><p>歌ってみた公開</p></div>
-            <div class="calendar-cell"><span class="day">24</span><p>渋谷ライブ</p></div>
-            <div class="calendar-cell"><span class="day">25</span><p>配信告知</p></div>
-            <div class="calendar-cell"><span class="day">26</span><p>名古屋対バン</p></div>
-            <div class="calendar-cell"><span class="day">27</span><p>MV公開</p></div>
-            <div class="calendar-cell"><span class="day">28</span><p>大阪公演</p></div>
-            <div class="calendar-cell"><span class="day">29</span><p>オフ会</p></div>
-          </div>
-        </div>
+<section id="calendar" class="section">
+  <div class="container">
+    <div class="schedule-head">
+      <div>
+        <p class="section-label">SCHEDULE</p>
+        <h2>予定</h2>
       </div>
-    </section>
+
+      <div class="schedule-toggle">
+        <button id="weekViewBtn" class="toggle-btn active">今週</button>
+        <button id="monthViewBtn" class="toggle-btn">今月</button>
+      </div>
+     </div>
+        <div id="scheduleGrid" class="schedule-grid"></div>
+      </div>
+</section>
 
     <section id="artists" class="section alt">
       <div class="container">
