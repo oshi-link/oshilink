@@ -6,7 +6,7 @@ const events = [
     area: '東京',
     time: '13:00 OPEN / 13:30 START',
     price: '3,500円',
-    tag: 'チケット発売中'
+    tag: 'チケット発売中',
     image: 'images/Fullcorse_2025.JPG'
   }
 ];
