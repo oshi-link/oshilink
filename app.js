@@ -62,7 +62,7 @@ const monthSelector = document.getElementById('monthSelector');
 const monthSelectorWrap = document.getElementById('monthSelectorWrap');
 
 let selectedCalendarYear = 2026;
-let selectedCalendarMonth = 3;
+let selectedCalendarMonth = new Date().getMonth() + 1;
 
 function renderEvents(list) {
   if (!eventGrid) return;
