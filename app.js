@@ -44,7 +44,6 @@ function renderEvents(list) {
       <div class="card-image">
         <img src="${item.image}" alt="">
         <span class="badge">${item.tag}</span>
-        <strong>${item.area}</strong>
       </div>
       <div class="card-body">
         <h3>${item.title}</h3>
