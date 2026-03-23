@@ -41,7 +41,8 @@ const filterButtons = document.querySelectorAll('.filter-btn');
 function renderEvents(list) {
   eventGrid.innerHTML = list.map(item => `
     <article class="card">
-      <div class="card-image" style="background-image: url('${item.image}')">
+      <div class="card-image">
+        <img src="${item.image}" alt="">
         <span class="badge">${item.tag}</span>
         <strong>${item.area}</strong>
       </div>
