@@ -230,6 +230,7 @@ nav a { color: var(--muted); font-weight: 500; }
   .card-grid, .artist-list { grid-template-columns: 1fr; }
   .section-head { align-items: start; flex-direction: column; }
   .footer-inner { flex-direction: column; gap: 6px; }
+}
 
 .schedule-head {
   display: flex;
