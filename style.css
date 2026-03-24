@@ -391,3 +391,74 @@ nav a { color: var(--muted); font-weight: 500; }
   background: #141422;
   color: #fff;
 }
+
+.more-events-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.show-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.events-page-head {
+  align-items: center;
+}
+
+.events-page-title {
+  margin: 6px 0 0;
+  font-size: 2.2rem;
+}
+
+.events-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.events-page-selector-wrap {
+  display: flex;
+}
+
+.events-page-month-label {
+  margin: 0 0 22px;
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+
+.events-empty {
+  grid-column: 1 / -1;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.03);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .events-page-head {
+    align-items: start;
+  }
+
+  .events-page-controls {
+    width: 100%;
+  }
+
+  .events-page-controls .toggle-btn,
+  .events-page-controls .month-selector {
+    width: 100%;
+  }
+}
