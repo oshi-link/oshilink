@@ -103,31 +103,49 @@ const monthSelectorWrap = document.getElementById('monthSelectorWrap');
 let selectedCalendarYear = 2026;
 let selectedCalendarMonth = 3;
 
+const allEventsGrid = document.getElementById('allEventsGrid');
+const eventsMonthSelector = document.getElementById('eventsMonthSelector');
+const eventsPageMonthLabel = document.getElementById('eventsPageMonthLabel');
+const prevMonthBtn = document.getElementById('prevMonthBtn');
+const nextMonthBtn = document.getElementById('nextMonthBtn');
+
 function renderEvents(list) {
   if (!eventGrid) return;
 
-  eventGrid.innerHTML = list.map(item => `
-    <article class="card">
-      <div class="card-image">
-        <img src="${item.image}" alt="${item.title}">
-        <span class="badge">${item.tag}</span>
-      </div>
-      <div class="card-body">
-        <h3>${item.title}</h3>
-        <div class="meta">
-          <span>🎤 ${item.artist}</span>
-          <span>📍 ${item.place}</span>
-          <span>📅 ${item.date}</span>
-          <span>🕒 ${item.time}</span>
-          <span>🎫 ${item.price}</span>
+  const sortedList = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const shouldShowMoreButton = sortedList.length >= 4;
+  const visibleList = shouldShowMoreButton ? sortedList.slice(0, 3) : sortedList;
+
+  eventGrid.innerHTML = `
+    ${visibleList.map(item => `
+      <article class="card">
+        <div class="card-image">
+          <img src="${item.image}" alt="${item.title}">
+          <span class="badge">${item.tag}</span>
         </div>
-        <div class="card-actions">
-          <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
-          <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
+        <div class="card-body">
+          <h3>${item.title}</h3>
+          <div class="meta">
+            <span>🎤 ${item.artist}</span>
+            <span>📍 ${item.place}</span>
+            <span>📅 ${item.date}</span>
+            <span>🕒 ${item.time}</span>
+            <span>🎫 ${item.price}</span>
+          </div>
+          <div class="card-actions">
+            <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
+            <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
+          </div>
         </div>
+      </article>
+    `).join('')}
+
+    ${shouldShowMoreButton ? `
+      <div class="more-events-wrap">
+        <a href="events.html?month=${selectedCalendarMonth}" class="show-more-btn">もっと見る</a>
       </div>
-    </article>
-  `).join('');
+    ` : ''}
+  `;
 }
 
 function renderVideos(list) {
@@ -198,6 +216,107 @@ function formatDateString(year, month, day) {
   const mm = String(month).padStart(2, '0');
   const dd = String(day).padStart(2, '0');
   return `${year}-${mm}-${dd}`;
+}
+
+function getMonthFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const month = Number(params.get('month'));
+  return month >= 1 && month <= 12 ? month : 3;
+}
+
+function updateEventsPageUrl(month) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('month', String(month));
+  window.history.replaceState({}, '', url);
+}
+
+function renderEventsPageByMonth(month) {
+  if (!allEventsGrid) return;
+
+  selectedCalendarMonth = month;
+
+  const filtered = [...events]
+    .filter(event => {
+      const eventDate = new Date(event.date);
+      return (
+        eventDate.getFullYear() === selectedCalendarYear &&
+        eventDate.getMonth() + 1 === month
+      );
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (eventsMonthSelector) {
+    eventsMonthSelector.value = String(month);
+  }
+
+  if (eventsPageMonthLabel) {
+    eventsPageMonthLabel.textContent = `${selectedCalendarYear}年${month}月のライブ一覧`;
+  }
+
+  if (!filtered.length) {
+    allEventsGrid.innerHTML = `
+      <div class="events-empty">
+        <p>この月のライブ情報はまだありません。</p>
+      </div>
+    `;
+    return;
+  }
+
+  allEventsGrid.innerHTML = filtered.map(item => `
+    <article class="card">
+      <div class="card-image">
+        <img src="${item.image}" alt="${item.title}">
+        <span class="badge">${item.tag}</span>
+      </div>
+      <div class="card-body">
+        <h3>${item.title}</h3>
+        <div class="meta">
+          <span>🎤 ${item.artist}</span>
+          <span>📍 ${item.place}</span>
+          <span>📅 ${item.date}</span>
+          <span>🕒 ${item.time}</span>
+          <span>🎫 ${item.price}</span>
+        </div>
+        <div class="card-actions">
+          <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
+          <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function setupEventsPage() {
+  if (!allEventsGrid) return;
+
+  const initialMonth = getMonthFromQuery();
+  renderEventsPageByMonth(initialMonth);
+
+  if (eventsMonthSelector) {
+    eventsMonthSelector.addEventListener('change', (e) => {
+      const month = Number(e.target.value);
+      updateEventsPageUrl(month);
+      renderEventsPageByMonth(month);
+    });
+  }
+
+  if (prevMonthBtn) {
+    prevMonthBtn.addEventListener('click', () => {
+      if (selectedCalendarMonth <= 1) return;
+      const month = selectedCalendarMonth - 1;
+      updateEventsPageUrl(month);
+      renderEventsPageByMonth(month);
+    });
+  }
+
+  if (nextMonthBtn) {
+    nextMonthBtn.addEventListener('click', () => {
+      if (selectedCalendarMonth >= 12) return;
+      const month = selectedCalendarMonth + 1;
+      updateEventsPageUrl(month);
+      renderEventsPageByMonth(month);
+    });
+  }
 }
 
 function renderWeekSchedule() {
@@ -333,3 +452,8 @@ if (monthSelector) {
 renderEvents(events);
 renderVideos(videos);
 renderWeekSchedule();
+
+renderEvents(events);
+renderVideos(videos);
+renderWeekSchedule();
+setupEventsPage();
