@@ -101,7 +101,7 @@ const monthSelector = document.getElementById('monthSelector');
 const monthSelectorWrap = document.getElementById('monthSelectorWrap');
 
 let selectedCalendarYear = 2026;
-let selectedCalendarMonth = new Date().getMonth() + 1;
+let selectedCalendarMonth = 3;
 
 function renderEvents(list) {
   if (!eventGrid) return;
@@ -304,11 +304,23 @@ function renderMonthSchedule() {
 }
 
 if (weekViewBtn) {
-  weekViewBtn.addEventListener('click', renderWeekSchedule);
+  weekViewBtn.addEventListener('click', () => {
+    renderWeekSchedule();
+
+    if (monthSelectorWrap) {
+      monthSelectorWrap.style.display = 'none';
+    }
+  });
 }
 
 if (monthViewBtn) {
-  monthViewBtn.addEventListener('click', renderMonthSchedule);
+  monthViewBtn.addEventListener('click', () => {
+    renderMonthSchedule();
+
+    if (monthSelectorWrap) {
+      monthSelectorWrap.style.display = 'flex';
+    }
+  });
 }
 
 if (monthSelector) {
