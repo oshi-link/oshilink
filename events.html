@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ライブ一覧 | OshiLink</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo"><a href="index.html">OshiLink</a></div>
+      <nav>
+        <a href="index.html#today">ライブ情報</a>
+        <a href="index.html#calendar">カレンダー</a>
+        <a href="index.html#artists">演者一覧</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="section-head events-page-head">
+          <div>
+            <p class="section-label">LIVE LIST</p>
+            <h1 class="events-page-title">ライブ一覧</h1>
+          </div>
+
+          <div class="events-page-controls">
+            <button id="prevMonthBtn" class="toggle-btn" type="button">前の月</button>
+
+            <div class="month-selector-wrap events-page-selector-wrap">
+              <select id="eventsMonthSelector" class="month-selector">
+                <option value="1">2026年1月</option>
+                <option value="2">2026年2月</option>
+                <option value="3">2026年3月</option>
+                <option value="4">2026年4月</option>
+                <option value="5">2026年5月</option>
+                <option value="6">2026年6月</option>
+                <option value="7">2026年7月</option>
+                <option value="8">2026年8月</option>
+                <option value="9">2026年9月</option>
+                <option value="10">2026年10月</option>
+                <option value="11">2026年11月</option>
+                <option value="12">2026年12月</option>
+              </select>
+            </div>
+
+            <button id="nextMonthBtn" class="toggle-btn" type="button">次の月</button>
+          </div>
+        </div>
+
+        <p id="eventsPageMonthLabel" class="events-page-month-label"></p>
+        <div id="allEventsGrid" class="card-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
