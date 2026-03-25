@@ -468,3 +468,25 @@ nav a { color: var(--muted); font-weight: 500; }
   color: #d1d5db;
   border: 1px solid rgba(255, 255, 255, 0.16);
 }
+
+.badge.ended {
+  background: rgba(255, 255, 255, 0.14);
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.mini-btn.disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.10);
+  color: #b8bcc8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
