@@ -1,11 +1,39 @@
 let events = [];
 
 async function loadEvents() {
-  const res = await fetch('./events.json');
-  events = await res.json();
+  try {
+    const res = await fetch('./events.json');
 
-  renderEvents(events);
-  setupEventsPage();
+    if (!res.ok) {
+      throw new Error(`events.json の読み込みに失敗しました: ${res.status}`);
+    }
+
+    events = await res.json();
+
+    renderEvents(events);
+    renderVideos(videos);
+    renderWeekSchedule();
+    setupEventsPage();
+
+  } catch (error) {
+    console.error('イベント読み込みエラー:', error);
+
+    if (eventGrid) {
+      eventGrid.innerHTML = `
+        <div class="events-empty">
+          <p>ライブ情報の読み込みに失敗しました。</p>
+        </div>
+      `;
+    }
+
+    if (allEventsGrid) {
+      allEventsGrid.innerHTML = `
+        <div class="events-empty">
+          <p>ライブ情報の読み込みに失敗しました。</p>
+        </div>
+      `;
+    }
+  }
 }
 
 loadEvents();
@@ -438,11 +466,4 @@ if (monthSelector) {
   });
 }
 
-renderEvents(events);
-renderVideos(videos);
-renderWeekSchedule();
-
-renderEvents(events);
-renderVideos(videos);
-renderWeekSchedule();
-setupEventsPage();
+loadEvents();
