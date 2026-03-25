@@ -469,4 +469,11 @@ if (monthSelector) {
   });
 }
 
-loadEvents();
+async function init() {
+  await loadEvents();
+  await loadVideos();
+  renderWeekSchedule();
+  setupEventsPage();
+}
+
+init();
