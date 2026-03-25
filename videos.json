@@ -1,0 +1,16 @@
+[
+  {
+    "title": "動画タイトル1",
+    "artist": "だうく",
+    "thumbnail": "images/video1.jpg",
+    "url": "https://www.youtube.com/watch?v=xxxx",
+    "date": "2026-03-01"
+  },
+  {
+    "title": "動画タイトル2",
+    "artist": "ゆちかみ",
+    "thumbnail": "images/video2.jpg",
+    "url": "https://www.youtube.com/watch?v=yyyy",
+    "date": "2026-03-10"
+  }
+]
