@@ -1,16 +1,20 @@
 [
   {
-    "title": "動画タイトル1",
-    "artist": "だうく",
-    "thumbnail": "images/video1.jpg",
-    "url": "https://www.youtube.com/watch?v=xxxx",
-    "date": "2026-03-01"
+    "title": "怪獣の花唄 / 歌ってみた",
+    "artist": "Amane",
+    "type": "歌ってみた",
+    "description": "YouTubeで公開中"
   },
   {
-    "title": "動画タイトル2",
-    "artist": "ゆちかみ",
-    "thumbnail": "images/video2.jpg",
-    "url": "https://www.youtube.com/watch?v=yyyy",
-    "date": "2026-03-10"
+    "title": "オリジナルMV Teaser",
+    "artist": "Shion",
+    "type": "MV",
+    "description": "新作MVティザー公開"
+  },
+  {
+    "title": "ライブダイジェスト",
+    "artist": "Luna*",
+    "type": "ライブ映像",
+    "description": "TikTok / Shorts向け告知動画"
   }
 ]
