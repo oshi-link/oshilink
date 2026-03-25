@@ -182,13 +182,13 @@ function renderVideos(list) {
           <span>👤 ${item.artist}</span>
           <span>▶ ${item.description}</span>
         </div>
-        <div class="card-actions">
-          ${
-            item.url
-              ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>`
-              : ``
-          }
-        </div>
+
+        ${item.url ? `
+          <div class="card-actions">
+            <a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>
+          </div>
+        ` : ''}
+
       </div>
     </article>
   `).join('');
