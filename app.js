@@ -167,6 +167,7 @@ function renderEvents(list) {
   `;
 }
 
+/*新着動画*/
 function renderVideos(list) {
   if (!videoGrid) return;
 
@@ -182,7 +183,11 @@ function renderVideos(list) {
           <span>▶ ${item.description}</span>
         </div>
         <div class="card-actions">
-          <a href="#" class="mini-btn">視聴する</a>
+          ${
+            item.url
+              ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>`
+              : ``
+          }
         </div>
       </div>
     </article>
