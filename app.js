@@ -11,9 +11,6 @@ async function loadEvents() {
     events = await res.json();
 
     renderEvents(events);
-    renderVideos(videos);
-    renderWeekSchedule();
-    setupEventsPage();
 
   } catch (error) {
     console.error('イベント読み込みエラー:', error);
@@ -37,6 +34,31 @@ async function loadEvents() {
 }
 
 loadEvents();
+
+async function loadVideos() {
+  try {
+    const res = await fetch('./videos.json');
+
+    if (!res.ok) {
+      throw new Error(`videos.json の読み込みに失敗しました: ${res.status}`);
+    }
+
+    videos = await res.json();
+    renderVideos(videos);
+
+  } catch (error) {
+    console.error('動画読み込みエラー:', error);
+
+    const videoGrid = document.getElementById('videoGrid');
+    if (videoGrid) {
+      videoGrid.innerHTML = `
+        <div class="events-empty">
+          <p>動画情報の読み込みに失敗しました。</p>
+        </div>
+      `;
+    }
+  }
+}
 
 function parseEventDate(dateString) {
   const [year, month, day] = dateString.split('-').map(Number);
@@ -68,26 +90,7 @@ function getTicketButtonHtml(item) {
   `;
 }
 
-const videos = [
-  {
-    title: '怪獣の花唄 / 歌ってみた',
-    artist: 'Amane',
-    type: '歌ってみた',
-    description: 'YouTubeで公開中'
-  },
-  {
-    title: 'オリジナルMV Teaser',
-    artist: 'Shion',
-    type: 'MV',
-    description: '新作MVティザー公開'
-  },
-  {
-    title: 'ライブダイジェスト',
-    artist: 'Luna*',
-    type: 'ライブ映像',
-    description: 'TikTok / Shorts向け告知動画'
-  }
-];
+let videos = [];
 
 const eventGrid = document.getElementById('eventGrid');
 const videoGrid = document.getElementById('videoGrid');
