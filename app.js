@@ -66,6 +66,24 @@ const events = [
   }
 ];
 
+function parseEventDate(dateString) {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function isPastEvent(dateString) {
+  const eventDate = parseEventDate(dateString);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return eventDate < today;
+}
+
+function getEventStatusLabel(event) {
+  return isPastEvent(event.date) ? '公演終了' : 'チケット発売中';
+}
+
 const videos = [
   {
     title: '怪獣の花唄 / 歌ってみた',
@@ -112,16 +130,29 @@ const nextMonthBtn = document.getElementById('nextMonthBtn');
 function renderEvents(list) {
   if (!eventGrid) return;
 
-  const sortedList = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const upcomingList = list.filter(item => !isPastEvent(item.date));
+  const sortedList = [...upcomingList].sort((a, b) => parseEventDate(a.date) - parseEventDate(b.date));
+
   const shouldShowMoreButton = sortedList.length >= 4;
   const visibleList = shouldShowMoreButton ? sortedList.slice(0, 3) : sortedList;
+
+  if (!visibleList.length) {
+    eventGrid.innerHTML = `
+      <div class="events-empty">
+        <p>現在表示できるライブ情報はありません。</p>
+      </div>
+    `;
+    return;
+  }
 
   eventGrid.innerHTML = `
     ${visibleList.map(item => `
       <article class="card">
         <div class="card-image">
           <img src="${item.image}" alt="${item.title}">
-          <span class="badge">${item.tag}</span>
+          <span class="badge ${isPastEvent(item.date) ? 'ended' : ''}">
+            ${getEventStatusLabel(item)}
+          </span>
         </div>
         <div class="card-body">
           <h3>${item.title}</h3>
@@ -266,7 +297,9 @@ function renderEventsPageByMonth(month) {
     <article class="card">
       <div class="card-image">
         <img src="${item.image}" alt="${item.title}">
-        <span class="badge">${item.tag}</span>
+        <span class="badge ${isPastEvent(item.date) ? 'ended' : ''}">
+          ${getEventStatusLabel(item)}
+        </span>
       </div>
       <div class="card-body">
         <h3>${item.title}</h3>
