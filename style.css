@@ -193,6 +193,8 @@ nav a { color: var(--muted); font-weight: 500; }
   border-radius: 50%; background: rgba(139,92,246,0.24); font-weight: 700; margin-bottom: 12px;
 }
 .calendar-cell p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+/*演者一覧見た目*/
 .artist-list {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
 }
@@ -218,7 +220,8 @@ nav a { color: var(--muted); font-weight: 500; }
 
 @media (max-width: 920px) {
   nav { display: none; }
-  .card-grid, .artist-list { grid-template-columns: 1fr 1fr; }
+  .card-grid { grid-template-columns: 1fr 1fr; }
+  .artist-list { grid-template-columns: repeat(3, 1fr); }
   .calendar-row { grid-template-columns: repeat(7, minmax(110px, 1fr)); }
   .calendar-box { overflow-x: auto; }
   .cta-box { flex-direction: column; align-items: start; }
@@ -227,7 +230,8 @@ nav a { color: var(--muted); font-weight: 500; }
 @media (max-width: 640px) {
   .hero { padding-top: 56px; }
   .search-box { flex-direction: column; }
-  .card-grid, .artist-list { grid-template-columns: 1fr; }
+  .card-grid { grid-template-columns: 1fr; }
+  .artist-list { grid-template-columns: 1fr; }
   .section-head { align-items: start; flex-direction: column; }
   .footer-inner { flex-direction: column; gap: 6px; }
 }
