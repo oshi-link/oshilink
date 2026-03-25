@@ -33,8 +33,6 @@ async function loadEvents() {
   }
 }
 
-loadEvents();
-
 async function loadVideos() {
   try {
     const res = await fetch('./videos.json');
