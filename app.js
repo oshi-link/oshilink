@@ -106,6 +106,9 @@ const monthSelectorWrap = document.getElementById('monthSelectorWrap');
 let selectedCalendarYear = 2026;
 let selectedCalendarMonth = 3;
 
+let artists = [];
+const artistGrid = document.getElementById('artistGrid');
+
 const allEventsGrid = document.getElementById('allEventsGrid');
 const eventsMonthSelector = document.getElementById('eventsMonthSelector');
 const eventsPageMonthLabel = document.getElementById('eventsPageMonthLabel');
@@ -201,6 +204,46 @@ function applyFilter(area = 'all', keyword = '') {
   });
 
   renderEvents(filtered);
+}
+
+/*演者一覧描写関数*/
+function renderArtists(list) {
+  if (!artistGrid) return;
+
+  artistGrid.innerHTML = list.map(item => `
+    <div class="artist-card">
+      <div class="artist-icon">${item.icon}</div>
+      <div>
+        <h3>${item.name}</h3>
+        <p>${item.description}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+/*演者一覧読み込み関数*/
+async function loadArtists() {
+  try {
+    const res = await fetch('./artists.json');
+
+    if (!res.ok) {
+      throw new Error(`artists.json の読み込みに失敗しました: ${res.status}`);
+    }
+
+    artists = await res.json();
+    renderArtists(artists);
+
+  } catch (error) {
+    console.error('演者読み込みエラー:', error);
+
+    if (artistGrid) {
+      artistGrid.innerHTML = `
+        <div class="events-empty">
+          <p>演者情報の読み込みに失敗しました。</p>
+        </div>
+      `;
+    }
+  }
 }
 
 let currentArea = 'all';
@@ -470,6 +513,7 @@ if (monthSelector) {
 async function init() {
   await loadEvents();
   await loadVideos();
+  await loadArtists();
   renderWeekSchedule();
   setupEventsPage();
 }
