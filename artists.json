@@ -1,1 +1,17 @@
-
+[
+  {
+    "name": "Amane",
+    "icon": "A",
+    "description": "歌い手 / MV公開中"
+  },
+  {
+    "name": "Luna*",
+    "icon": "L",
+    "description": "地下アイドル / 東京中心"
+  },
+  {
+    "name": "Shion",
+    "icon": "S",
+    "description": "歌い手 / 配信・ライブ告知"
+  }
+]
