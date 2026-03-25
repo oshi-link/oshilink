@@ -84,6 +84,18 @@ function getEventStatusLabel(event) {
   return isPastEvent(event.date) ? '公演終了' : 'チケット発売中';
 }
 
+function getTicketButtonHtml(item) {
+  if (isPastEvent(item.date)) {
+    return `<span class="mini-btn disabled">終了</span>`;
+  }
+
+  return `
+    <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">
+      チケット
+    </a>
+  `;
+}
+
 const videos = [
   {
     title: '怪獣の花唄 / 歌ってみた',
@@ -164,8 +176,8 @@ function renderEvents(list) {
             <span>🎫 ${item.price}</span>
           </div>
           <div class="card-actions">
-            <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
-            <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
+             <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
+               ${getTicketButtonHtml(item)}
           </div>
         </div>
       </article>
@@ -312,7 +324,7 @@ function renderEventsPageByMonth(month) {
         </div>
         <div class="card-actions">
           <a href="${item.detailUrl}" class="ghost-btn" target="_blank" rel="noopener noreferrer">詳細</a>
-          <a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>
+          ${getTicketButtonHtml(item)}
         </div>
       </div>
     </article>
