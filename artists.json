@@ -1,14 +1,14 @@
 [
   {
     "name": "だうく",
-    "icon": "dauk.jpg",
+    "icon": "icon/dauk.jpg",
     "description": "歌い手 / 動画師 / MIX師",
     "xUrl": "https://x.com/dauk_CA",
     "detailUrl": "artist-dauk.html"
   },
   {
     "name": "ゆちかみ",
-    "icon": "yuchikami.jpg",
+    "icon": "icon/yuchikami.jpg",
     "description": "歌い手 / 絵師",
     "xUrl": "https://x.com/yuchikamisan",
     "detailUrl": "artist-yucjikami.html"
