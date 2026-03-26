@@ -258,13 +258,29 @@ function renderArtists(list) {
   if (!artistGrid) return;
 
   artistGrid.innerHTML = list.map(item => `
-    <div class="artist-card">
-      <div class="artist-icon">${item.icon}</div>
-      <div>
-        <h3>${item.name}</h3>
-        <p>${item.description}</p>
+    <article class="artist-card">
+      <div class="artist-card-main">
+        <div class="artist-icon">${item.icon}</div>
+        <div class="artist-info">
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+        </div>
       </div>
-    </div>
+
+      <div class="artist-card-overlay">
+        ${item.xUrl ? `
+          <a href="${item.xUrl}" class="artist-action-btn x-btn" target="_blank" rel="noopener noreferrer">
+            Xへ
+          </a>
+        ` : ''}
+
+        ${item.detailUrl ? `
+          <a href="${item.detailUrl}" class="artist-action-btn detail-btn">
+            もっと見る
+          </a>
+        ` : ''}
+      </div>
+    </article>
   `).join('');
 }
 
