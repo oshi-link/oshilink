@@ -236,6 +236,115 @@ nav a { color: var(--muted); font-weight: 500; }
   .footer-inner { flex-direction: column; gap: 6px; }
 }
 
+.artist-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.artist-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+  border-color: rgba(236, 72, 153, 0.45);
+}
+
+.artist-card-main {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+}
+
+.artist-info h3 {
+  margin: 0 0 4px;
+}
+
+.artist-info p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.artist-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(11, 11, 20, 0.92),
+    rgba(11, 11, 20, 0.55)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.artist-card:hover .artist-card-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.artist-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 130px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.artist-card:hover .artist-action-btn {
+  transform: translateY(0);
+}
+
+.x-btn {
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #fff;
+}
+
+.detail-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .artist-card-overlay {
+    opacity: 1;
+    visibility: visible;
+    position: static;
+    margin-top: 14px;
+    background: transparent;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  .artist-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .artist-card-main {
+    width: 100%;
+  }
+
+  .artist-action-btn {
+    min-width: auto;
+    flex: 1;
+  }
+}
+
 .schedule-head {
   display: flex;
   justify-content: space-between;
