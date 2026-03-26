@@ -257,33 +257,47 @@ function applyFilter(area = 'all', keyword = '') {
 function renderArtists(list) {
   if (!artistGrid) return;
 
-  artistGrid.innerHTML = list.map(item => `
-    <article class="artist-card">
-      <div class="artist-card-main">
-        <div class="artist-icon">
-          <img src="images/icon/${item.icon}" alt="${item.name}">
-        </div>
-        <div class="artist-info">
-          <h3>${item.name}</h3>
-          <p>${item.description}</p>
-        </div>
-      </div>
+  artistGrid.innerHTML = list.map(item => {
+    const isImageIcon =
+      typeof item.icon === 'string' &&
+      (item.icon.endsWith('.webp') ||
+       item.icon.endsWith('.png') ||
+       item.icon.endsWith('.jpg') ||
+       item.icon.endsWith('.jpeg') ||
+       item.icon.endsWith('.svg'));
 
-      <div class="artist-card-overlay">
-        ${item.xUrl ? `
-          <a href="${item.xUrl}" class="artist-action-btn x-btn" target="_blank" rel="noopener noreferrer">
-            X
-          </a>
-        ` : ''}
+    return `
+      <article class="artist-card">
+        <div class="artist-card-main">
+          <div class="artist-icon">
+            ${
+              isImageIcon
+                ? `<img src="images/icon/${item.icon}" alt="${item.name}" loading="lazy" width="52" height="52">`
+                : `${item.icon}`
+            }
+          </div>
+          <div class="artist-info">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+          </div>
+        </div>
 
-        ${item.detailUrl ? `
-          <a href="${item.detailUrl}" class="artist-action-btn detail-btn">
-            もっと見る
-          </a>
-        ` : ''}
-      </div>
-    </article>
-  `).join('');
+        <div class="artist-card-overlay">
+          ${item.xUrl ? `
+            <a href="${item.xUrl}" class="artist-action-btn x-btn" target="_blank" rel="noopener noreferrer">
+              X
+            </a>
+          ` : ''}
+
+          ${item.detailUrl ? `
+            <a href="${item.detailUrl}" class="artist-action-btn detail-btn">
+              もっと見る
+            </a>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 /*演者一覧読み込み関数*/
