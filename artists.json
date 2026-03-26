@@ -1,17 +1,23 @@
 [
   {
-    "name": "Amane",
-    "icon": "A",
-    "description": "歌い手 / MV公開中"
+    "name": "だうく",
+    "icon": "D",
+    "description": "歌い手 / 動画師 / MIX師",
+    "xUrl": "https://x.com/dauk_CA",
+    "detailUrl": "artist-dauk.html"
   },
   {
-    "name": "Luna*",
-    "icon": "L",
-    "description": "地下アイドル / 東京中心"
+    "name": "ゆちかみ",
+    "icon": "Y",
+    "description": "歌い手 / 絵師",
+    "xUrl": "https://x.com/yuchikamisan",
+    "detailUrl": "artist-yucjikami.html"
   },
   {
     "name": "Shion",
     "icon": "S",
-    "description": "歌い手 / 配信・ライブ告知"
+    "description": "歌い手 / 配信・ライブ告知",
+    "xUrl": "https://x.com/ここにXのURL",
+    "detailUrl": "artist-shion.html"
   }
 ]
