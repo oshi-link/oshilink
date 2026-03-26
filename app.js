@@ -137,7 +137,7 @@ function renderEvents(list) {
     ${visibleList.map(item => `
       <article class="card">
         <div class="card-image">
-          <img src="${item.image}" alt="${item.title}">
+          <img src="${item.image}" loading="lazy" alt="${item.title}" width="600" height="400">
           <span class="badge ${isPastEvent(item.date) ? 'ended' : ''}">
             ${getEventStatusLabel(item)}
           </span>
@@ -213,7 +213,7 @@ function renderVideos(list) {
         <div class="card-image">
           ${
             thumbnail
-              ? `<img src="${thumbnail}" alt="${item.title}のサムネイル">`
+              ? `<img src="${thumbnail}" loading="lazy" alt="${item.title}のサムネイル" width="600" height="338">`
               : ``
           }
           <span class="badge">${item.type}</span>
@@ -389,7 +389,7 @@ function renderEventsPageByMonth(month) {
   allEventsGrid.innerHTML = filtered.map(item => `
     <article class="card">
       <div class="card-image">
-        <img src="${item.image}" alt="${item.title}">
+       <img src="${item.image}" loading="lazy" alt="${item.title}" width="600" height="400">
         <span class="badge ${isPastEvent(item.date) ? 'ended' : ''}">
           ${getEventStatusLabel(item)}
         </span>
