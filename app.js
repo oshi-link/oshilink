@@ -260,7 +260,9 @@ function renderArtists(list) {
   artistGrid.innerHTML = list.map(item => `
     <article class="artist-card">
       <div class="artist-card-main">
-        <div class="artist-icon">${item.icon}</div>
+        <div class="artist-icon">
+          <img src="icon/${item.icon}" alt="${item.name}">
+        </div>
         <div class="artist-info">
           <h3>${item.name}</h3>
           <p>${item.description}</p>
@@ -270,7 +272,7 @@ function renderArtists(list) {
       <div class="artist-card-overlay">
         ${item.xUrl ? `
           <a href="${item.xUrl}" class="artist-action-btn x-btn" target="_blank" rel="noopener noreferrer">
-            Xへ
+            X
           </a>
         ` : ''}
 
