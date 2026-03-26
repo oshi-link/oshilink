@@ -261,7 +261,7 @@ function renderArtists(list) {
     <article class="artist-card">
       <div class="artist-card-main">
         <div class="artist-icon">
-          <img src="icon/${item.icon}" alt="${item.name}">
+          <img src="images/icon/${item.icon}" alt="${item.name}">
         </div>
         <div class="artist-info">
           <h3>${item.name}</h3>
