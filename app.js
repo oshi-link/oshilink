@@ -168,30 +168,72 @@ function renderEvents(list) {
 }
 
 /*新着動画*/
+function getYouTubeVideoId(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname === 'youtu.be') {
+      return parsed.pathname.slice(1);
+    }
+
+    if (
+      parsed.hostname.includes('youtube.com') ||
+      parsed.hostname.includes('www.youtube.com')
+    ) {
+      return parsed.searchParams.get('v');
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function getVideoThumbnail(url) {
+  const videoId = getYouTubeVideoId(url);
+
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+
+  return '';
+}
+
+/*新着動画*/
 function renderVideos(list) {
   if (!videoGrid) return;
 
-  videoGrid.innerHTML = list.map(item => `
-    <article class="card">
-      <div class="card-image">
-        <span class="badge">${item.type}</span>
-      </div>
-      <div class="card-body">
-        <h3>${item.title}</h3>
-        <div class="meta">
-          <span>👤 ${item.artist}</span>
-          <span>▶ ${item.description}</span>
+  videoGrid.innerHTML = list.map(item => {
+    const thumbnail = getVideoThumbnail(item.url);
+
+    return `
+      <article class="card">
+        <div class="card-image">
+          ${
+            thumbnail
+              ? `<img src="${thumbnail}" alt="${item.title}のサムネイル">`
+              : ``
+          }
+          <span class="badge">${item.type}</span>
         </div>
-
-        ${item.url ? `
-          <div class="card-actions">
-            <a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>
+        <div class="card-body">
+          <h3>${item.title}</h3>
+          <div class="meta">
+            <span>👤 ${item.artist}</span>
+            <span>▶ ${item.description}</span>
           </div>
-        ` : ''}
 
-      </div>
-    </article>
-  `).join('');
+          ${item.url ? `
+            <div class="card-actions">
+              <a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>
+            </div>
+          ` : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
 }
 
 function applyFilter(area = 'all', keyword = '') {
