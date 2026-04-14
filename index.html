@@ -4,12 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OshiLink | 推しの“今”が全部わかる</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- ヘッダー -->
   <header class="site-header">
     <div class="container nav">
       <div class="logo">OshiLink</div>
@@ -17,17 +21,22 @@
         <a href="#today">ライブ情報</a>
         <a href="#videos">新着動画</a>
         <a href="#artists">演者一覧</a>
-        <a href="#submit" class="nav-cta">掲載する</a>
+        <a href="login.html" class="nav-cta">ログイン</a>
       </nav>
     </div>
   </header>
 
   <main>
+
+    <!-- ヒーロー -->
     <section class="hero">
       <div class="container hero-inner">
         <p class="eyebrow">歌い手告知まとめサイト</p>
         <h1>推しの“今”が<br>全部わかる</h1>
-        <p class="hero-text">ライブ情報も、歌ってみたも、配信告知も。<br>散らばった宣伝情報をひとつにまとめるポータルサイト。</p>
+        <p class="hero-text">
+          ライブ情報も、歌ってみたも、配信告知も。<br>
+          散らばった宣伝情報をひとつにまとめるポータルサイト。
+        </p>
 
         <div class="search-box">
           <input id="searchInput" type="text" placeholder="アーティスト名 / 地域 / 会場で検索" />
@@ -43,6 +52,7 @@
       </div>
     </section>
 
+    <!-- ライブ情報 -->
     <section id="today" class="section">
       <div class="container">
         <div class="section-head">
@@ -50,47 +60,15 @@
             <p class="section-label">LIVE</p>
             <h2>ライブ情報</h2>
           </div>
-          <a href="#calendar" class="text-link">カレンダーを見る</a>
+          <a href="events.html" class="text-link">一覧を見る</a>
         </div>
+
         <div id="eventGrid" class="card-grid"></div>
       </div>
     </section>
 
-<section id="calendar" class="section">
-  <div class="container">
-    <div class="schedule-head">
-  <div>
-    <p class="section-label">SCHEDULE</p>
-    <h2>予定</h2>
-  </div>
-
-  <div class="schedule-controls">
-    <div class="schedule-toggle">
-      <button id="weekViewBtn" class="toggle-btn active">今週</button>
-      <button id="monthViewBtn" class="toggle-btn">今月</button>
-    </div>
-
-    <div id="monthSelectorWrap" class="month-selector-wrap">
-      <select id="monthSelector" class="month-selector">
-        <option value="3">2026年3月</option>
-        <option value="4">2026年4月</option>
-        <option value="5">2026年5月</option>
-        <option value="6">2026年6月</option>
-        <option value="7">2026年7月</option>
-        <option value="8">2026年8月</option>
-        <option value="9">2026年9月</option>
-        <option value="10">2026年10月</option>
-        <option value="11">2026年11月</option>
-        <option value="12">2026年12月</option>
-      </select>
-    </div>
-  </div>
-</div>
-        <div id="scheduleGrid" class="schedule-grid"></div>
-      </div>
-</section>
-
-  <section id="videos" class="section alt">
+    <!-- 動画 -->
+    <section id="videos" class="section alt">
       <div class="container">
         <div class="section-head">
           <div>
@@ -98,34 +76,40 @@
             <h2>新着動画</h2>
           </div>
         </div>
+
         <div id="videoGrid" class="card-grid video-grid"></div>
       </div>
-  </section>
-    
-<section id="artists" class="section alt">
-  <div class="container">
-    <div class="section-head">
-      <div>
-        <p class="section-label">ARTISTS</p>
-        <h2>演者一覧</h2>
-      </div>
-    </div>
-    <div id="artistGrid" class="artist-list"></div>
-  </div>
-</section>
+    </section>
 
-    <section id="submit" class="section cta-section">
-      <div class="container cta-box">
-        <div>
-          <p class="section-label">SUBMIT</p>
-          <h2>掲載したい方はこちら</h2>
-          <p>まずは Googleフォームで受付し、手動で掲載する形が一番始めやすいです。</p>
+    <!-- 演者一覧 -->
+    <section id="artists" class="section alt">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="section-label">ARTISTS</p>
+            <h2>演者一覧</h2>
+          </div>
         </div>
-        <a class="primary-btn" href="#">掲載フォームを作る</a>
+
+        <div id="artistGrid" class="artist-list"></div>
       </div>
     </section>
+
+    <!-- CTA -->
+    <section class="section cta-section">
+      <div class="container cta-box">
+        <div>
+          <p class="section-label">START</p>
+          <h2>あなたも掲載してみませんか？</h2>
+          <p>ログインするとイベントや動画を投稿できます。</p>
+        </div>
+        <a class="primary-btn" href="login.html">ログインする</a>
+      </div>
+    </section>
+
   </main>
 
+  <!-- フッター -->
   <footer class="site-footer">
     <div class="container footer-inner">
       <p>© 2026 OshiLink</p>
@@ -133,6 +117,8 @@
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <!-- 🔥 ここ超重要 -->
+  <script type="module" src="app.js"></script>
+
 </body>
 </html>
