@@ -1,107 +1,429 @@
-import { supabase, getCurrentProfile } from './supabase.js';
-import { requireAuth, signOut } from './auth.js';
-import { PLAN_LIMITS, canCreateCount, getPlanLabel } from './plan-utils.js';
+import { supabase } from "./supabase.js";
+import { getPlanLimits } from "./plan-utils.js";
 
-const profileName = document.getElementById('profileName');
-const profileEmail = document.getElementById('profileEmail');
-const profilePlanChip = document.getElementById('profilePlanChip');
-const planSummary = document.getElementById('planSummary');
-const artistCountEl = document.getElementById('artistCount');
-const eventCountEl = document.getElementById('eventCount');
-const videoCountEl = document.getElementById('videoCount');
-const myArtistsBody = document.getElementById('myArtistsBody');
-const myEventsBody = document.getElementById('myEventsBody');
-const myVideosBody = document.getElementById('myVideosBody');
-const artistForm = document.getElementById('artistForm');
-const eventForm = document.getElementById('eventForm');
-const videoForm = document.getElementById('videoForm');
-const logoutBtn = document.getElementById('logoutBtn');
-const messageBox = document.getElementById('messageBox');
+const userEmail = document.getElementById("userEmail");
+const userPlan = document.getElementById("userPlan");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const eventForm = document.getElementById("eventForm");
+const eventMessage = document.getElementById("eventMessage");
+const myEvents = document.getElementById("myEvents");
+
+const artistForm = document.getElementById("artistForm");
+const artistMessage = document.getElementById("artistMessage");
+const myArtists = document.getElementById("myArtists");
+
+const videoForm = document.getElementById("videoForm");
+const videoMessage = document.getElementById("videoMessage");
+const myVideos = document.getElementById("myVideos");
 
 let currentUser = null;
 let currentProfile = null;
-let myArtists = [];
-let myEvents = [];
-let myVideos = [];
 
-const setMessage = (text, type='success') => messageBox.innerHTML = `<div class="alert ${type}">${text}</div>`;
-const getPlanSummaryText = (plan) => {
-  const rules = PLAN_LIMITS[plan];
-  const format = (value) => value === Infinity ? '無制限' : `${value}件まで`;
-  return `演者: ${format(rules.artists)}<br>イベント: ${format(rules.events)}<br>動画: ${format(rules.videos)}<br>分析機能: ${rules.analytics ? 'あり' : 'なし'}`;
-};
-const formToObject = (formElement) => Object.fromEntries(new FormData(formElement).entries());
-
-async function loadDashboardData() {
-  const [{ data: artists, error: artistError }, { data: events, error: eventError }, { data: videos, error: videoError }] = await Promise.all([
-    supabase.from('artists').select('*').eq('owner_user_id', currentUser.id).order('created_at', { ascending: false }),
-    supabase.from('events').select('*').eq('owner_user_id', currentUser.id).order('event_date', { ascending: false }),
-    supabase.from('videos').select('*').eq('owner_user_id', currentUser.id).order('created_at', { ascending: false })
-  ]);
-  if (artistError || eventError || videoError) throw artistError || eventError || videoError;
-
-  myArtists = artists || [];
-  myEvents = events || [];
-  myVideos = videos || [];
-  artistCountEl.textContent = myArtists.length;
-  eventCountEl.textContent = myEvents.length;
-  videoCountEl.textContent = myVideos.length;
-  renderTables();
+async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    location.href = "login.html";
+    return null;
+  }
+  return data.user;
 }
 
-function renderTables() {
-  myArtistsBody.innerHTML = myArtists.length ? myArtists.map(item => `<tr><td>${item.name}</td><td>${item.x_url ? `<a href="${item.x_url}" target="_blank" rel="noopener noreferrer">Xを見る</a>` : '-'}</td><td>${new Date(item.created_at).toLocaleDateString('ja-JP')}</td><td><button class="ghost-btn" type="button" data-delete-artist="${item.id}">削除</button></td></tr>`).join('') : `<tr><td colspan="4" class="muted">まだ演者がありません。</td></tr>`;
-  myEventsBody.innerHTML = myEvents.length ? myEvents.map(item => `<tr><td>${item.title}</td><td>${item.event_date}</td><td>${item.place}</td><td><button class="ghost-btn" type="button" data-delete-event="${item.id}">削除</button></td></tr>`).join('') : `<tr><td colspan="4" class="muted">まだイベントがありません。</td></tr>`;
-  myVideosBody.innerHTML = myVideos.length ? myVideos.map(item => `<tr><td>${item.title}</td><td>${item.artist_name}</td><td>${new Date(item.created_at).toLocaleDateString('ja-JP')}</td><td><button class="ghost-btn" type="button" data-delete-video="${item.id}">削除</button></td></tr>`).join('') : `<tr><td colspan="4" class="muted">まだ動画がありません。</td></tr>`;
+async function loadProfile(userId) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    console.error("プロフィール取得失敗:", error);
+    return null;
+  }
+
+  return data;
 }
 
-async function createArtist(values) {
-  if (!canCreateCount(currentProfile.plan, 'artists', myArtists.length)) throw new Error('現在のプランでは演者の追加上限に達しています。');
-  const { error } = await supabase.from('artists').insert({ owner_user_id: currentUser.id, name: values.name, description: values.description || null, icon_path: values.icon_path || null, x_url: values.x_url || null, detail_slug: values.detail_slug || null });
+async function uploadImage(bucketName, file, userId) {
+  if (!file) return "";
+
+  const ext = file.name.split(".").pop();
+  const filePath = `${userId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucketName)
+    .upload(filePath, file);
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+}
+
+function getSafePlan(profile) {
+  return profile?.plan || "free";
+}
+
+async function countUserEvents(userId) {
+  const { count, error } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_user_id", userId);
+
   if (error) throw error;
-}
-async function createEvent(values) {
-  if (!canCreateCount(currentProfile.plan, 'events', myEvents.length)) throw new Error('現在のプランではイベントの追加上限に達しています。');
-  const { error } = await supabase.from('events').insert({ owner_user_id: currentUser.id, title: values.title, artist_name: values.artist_name, place: values.place, area: values.area, event_date: values.event_date, time_text: values.time_text || null, price: values.price || null, image_path: values.image_path || null, detail_url: values.detail_url || null, ticket_url: values.ticket_url || null, priority_score: currentProfile.plan === 'premium' ? 20 : currentProfile.plan === 'standard' ? 10 : 0, status: 'published' });
-  if (error) throw error;
-}
-function getYouTubeThumbnail(url) {
-  if (!url) return null;
-  try { const parsed = new URL(url); if (parsed.hostname==='youtu.be') return `https://img.youtube.com/vi/${parsed.pathname.slice(1)}/hqdefault.jpg`; if (parsed.hostname.includes('youtube.com')) { const id=parsed.searchParams.get('v'); return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null; } } catch {}
-  return null;
-}
-async function createVideo(values) {
-  if (!canCreateCount(currentProfile.plan, 'videos', myVideos.length)) throw new Error('現在のプランでは動画の追加上限に達しています。');
-  const { error } = await supabase.from('videos').insert({ owner_user_id: currentUser.id, title: values.title, artist_name: values.artist_name, type: values.type || null, description: values.description || null, url: values.url || null, thumbnail_url: getYouTubeThumbnail(values.url) });
-  if (error) throw error;
-}
-async function deleteRecord(table, id) {
-  const { error } = await supabase.from(table).delete().eq('id', id).eq('owner_user_id', currentUser.id);
-  if (error) throw error;
+  return count || 0;
 }
 
-artistForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await createArtist(formToObject(artistForm)); artistForm.reset(); await loadDashboardData(); setMessage('演者を保存しました。'); } catch (error) { setMessage(error.message, 'error'); } });
-eventForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await createEvent(formToObject(eventForm)); eventForm.reset(); await loadDashboardData(); setMessage('イベントを保存しました。'); } catch (error) { setMessage(error.message, 'error'); } });
-videoForm.addEventListener('submit', async (e) => { e.preventDefault(); try { await createVideo(formToObject(videoForm)); videoForm.reset(); await loadDashboardData(); setMessage('動画を保存しました。'); } catch (error) { setMessage(error.message, 'error'); } });
+async function countUserArtists(userId) {
+  const { count, error } = await supabase
+    .from("artists")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_user_id", userId);
 
-document.addEventListener('click', async (e) => {
+  if (error) throw error;
+  return count || 0;
+}
+
+async function countUserVideos(userId) {
+  const { count, error } = await supabase
+    .from("videos")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_user_id", userId);
+
+  if (error) throw error;
+  return count || 0;
+}
+
+function renderEvents(list) {
+  if (!myEvents) return;
+
+  if (!list.length) {
+    myEvents.innerHTML = `
+      <div class="events-empty">
+        <p>まだイベントは投稿されていません。</p>
+      </div>
+    `;
+    return;
+  }
+
+  myEvents.innerHTML = list.map(item => `
+    <article class="card">
+      <div class="card-image">
+        ${item.image_path ? `<img src="${item.image_path}" alt="${item.title}" loading="lazy">` : ""}
+        <span class="badge">${item.status || "published"}</span>
+      </div>
+      <div class="card-body">
+        <h3>${item.title}</h3>
+        <div class="meta">
+          <span>🎤 ${item.artist_name}</span>
+          <span>📍 ${item.place}</span>
+          <span>📅 ${item.event_date}</span>
+          <span>🕒 ${item.time_text || ""}</span>
+        </div>
+        <div class="card-actions">
+          <button class="ghost-btn delete-event-btn" data-id="${item.id}">削除</button>
+        </div>
+      </div>
+    </article>
+  `).join("");
+
+  document.querySelectorAll(".delete-event-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const ok = confirm("このイベントを削除しますか？");
+      if (!ok) return;
+
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) {
+        alert("削除に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      await loadMyEvents();
+    });
+  });
+}
+
+function renderArtists(list) {
+  if (!myArtists) return;
+
+  if (!list.length) {
+    myArtists.innerHTML = `
+      <div class="events-empty">
+        <p>まだ演者は登録されていません。</p>
+      </div>
+    `;
+    return;
+  }
+
+  myArtists.innerHTML = list.map(item => `
+    <article class="card">
+      <div class="card-image">
+        ${item.icon_path ? `<img src="${item.icon_path}" alt="${item.name}" loading="lazy">` : ""}
+        <span class="badge">ARTIST</span>
+      </div>
+      <div class="card-body">
+        <h3>${item.name}</h3>
+        <div class="meta">
+          <span>📝 ${item.description || ""}</span>
+          <span>🔗 ${item.x_url || ""}</span>
+        </div>
+        <div class="card-actions">
+          <button class="ghost-btn delete-artist-btn" data-id="${item.id}">削除</button>
+        </div>
+      </div>
+    </article>
+  `).join("");
+
+  document.querySelectorAll(".delete-artist-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const ok = confirm("この演者を削除しますか？");
+      if (!ok) return;
+
+      const { error } = await supabase.from("artists").delete().eq("id", id);
+      if (error) {
+        alert("削除に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      await loadMyArtists();
+    });
+  });
+}
+
+function renderVideos(list) {
+  if (!myVideos) return;
+
+  if (!list.length) {
+    myVideos.innerHTML = `
+      <div class="events-empty">
+        <p>まだ動画は投稿されていません。</p>
+      </div>
+    `;
+    return;
+  }
+
+  myVideos.innerHTML = list.map(item => `
+    <article class="card">
+      <div class="card-body">
+        <h3>${item.title}</h3>
+        <div class="meta">
+          <span>👤 ${item.artist_name}</span>
+          <span>▶ ${item.description || ""}</span>
+          <span>🏷 ${item.type || ""}</span>
+        </div>
+        <div class="card-actions">
+          ${item.url ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>` : ""}
+          <button class="ghost-btn delete-video-btn" data-id="${item.id}">削除</button>
+        </div>
+      </div>
+    </article>
+  `).join("");
+
+  document.querySelectorAll(".delete-video-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const ok = confirm("この動画を削除しますか？");
+      if (!ok) return;
+
+      const { error } = await supabase.from("videos").delete().eq("id", id);
+      if (error) {
+        alert("削除に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      await loadMyVideos();
+    });
+  });
+}
+
+async function loadMyEvents() {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("owner_user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("イベント取得失敗:", error);
+    return;
+  }
+
+  renderEvents(data || []);
+}
+
+async function loadMyArtists() {
+  const { data, error } = await supabase
+    .from("artists")
+    .select("*")
+    .eq("owner_user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("演者取得失敗:", error);
+    return;
+  }
+
+  renderArtists(data || []);
+}
+
+async function loadMyVideos() {
+  const { data, error } = await supabase
+    .from("videos")
+    .select("*")
+    .eq("owner_user_id", currentUser.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("動画取得失敗:", error);
+    return;
+  }
+
+  renderVideos(data || []);
+}
+
+eventForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  eventMessage.textContent = "";
+
   try {
-    if (e.target.dataset.deleteArtist) { await deleteRecord('artists', e.target.dataset.deleteArtist); await loadDashboardData(); setMessage('演者を削除しました。'); }
-    if (e.target.dataset.deleteEvent) { await deleteRecord('events', e.target.dataset.deleteEvent); await loadDashboardData(); setMessage('イベントを削除しました。'); }
-    if (e.target.dataset.deleteVideo) { await deleteRecord('videos', e.target.dataset.deleteVideo); await loadDashboardData(); setMessage('動画を削除しました。'); }
-  } catch (error) { setMessage(error.message, 'error'); }
+    const limits = getPlanLimits(getSafePlan(currentProfile));
+    const currentCount = await countUserEvents(currentUser.id);
+
+    if (limits.maxEvents !== null && currentCount >= limits.maxEvents) {
+      eventMessage.textContent = `このプランではイベントは ${limits.maxEvents} 件までです。`;
+      return;
+    }
+
+    const imageFile = document.getElementById("eventImage").files[0];
+    const imageUrl = await uploadImage("event-images", imageFile, currentUser.id);
+
+    const payload = {
+      owner_user_id: currentUser.id,
+      title: document.getElementById("title").value,
+      artist_name: document.getElementById("artist").value,
+      place: document.getElementById("place").value,
+      area: document.getElementById("area").value,
+      event_date: document.getElementById("date").value,
+      time_text: document.getElementById("time").value,
+      price: document.getElementById("price").value,
+      detail_url: document.getElementById("detailUrl").value,
+      ticket_url: document.getElementById("ticketUrl").value,
+      image_path: imageUrl,
+      status: "published"
+    };
+
+    const { error } = await supabase.from("events").insert(payload);
+    if (error) throw error;
+
+    eventMessage.textContent = "イベントを投稿しました。";
+    eventForm.reset();
+    await loadMyEvents();
+  } catch (error) {
+    console.error(error);
+    eventMessage.textContent = "イベント投稿に失敗しました。";
+  }
 });
-logoutBtn.addEventListener('click', async () => { try { await signOut(); location.href='./login.html'; } catch (error) { setMessage(error.message, 'error'); } });
 
-(async function init(){
+artistForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  artistMessage.textContent = "";
+
   try {
-    currentUser = await requireAuth();
-    if (!currentUser) return;
-    currentProfile = await getCurrentProfile();
-    profileName.textContent = currentProfile.display_name || 'ユーザー';
-    profileEmail.textContent = currentUser.email || '-';
-    profilePlanChip.textContent = getPlanLabel(currentProfile.plan);
-    planSummary.innerHTML = getPlanSummaryText(currentProfile.plan);
-    await loadDashboardData();
-  } catch (error) { setMessage(error.message, 'error'); }
-})();
+    const limits = getPlanLimits(getSafePlan(currentProfile));
+    const currentCount = await countUserArtists(currentUser.id);
+
+    if (limits.maxArtists !== null && currentCount >= limits.maxArtists) {
+      artistMessage.textContent = `このプランでは演者登録は ${limits.maxArtists} 件までです。`;
+      return;
+    }
+
+    const iconFile = document.getElementById("artistIcon").files[0];
+    const iconUrl = await uploadImage("artist-icons", iconFile, currentUser.id);
+
+    const payload = {
+      owner_user_id: currentUser.id,
+      name: document.getElementById("artistName").value,
+      description: document.getElementById("artistDescription").value,
+      icon_path: iconUrl,
+      x_url: document.getElementById("artistXUrl").value,
+      detail_slug: document.getElementById("artistDetailSlug").value || null,
+      is_public: true
+    };
+
+    const { error } = await supabase.from("artists").insert(payload);
+    if (error) throw error;
+
+    artistMessage.textContent = "演者を登録しました。";
+    artistForm.reset();
+    await loadMyArtists();
+  } catch (error) {
+    console.error(error);
+    artistMessage.textContent = "演者登録に失敗しました。";
+  }
+});
+
+videoForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  videoMessage.textContent = "";
+
+  try {
+    const limits = getPlanLimits(getSafePlan(currentProfile));
+    const currentCount = await countUserVideos(currentUser.id);
+
+    if (limits.maxVideos !== null && currentCount >= limits.maxVideos) {
+      videoMessage.textContent = `このプランでは動画は ${limits.maxVideos} 件までです。`;
+      return;
+    }
+
+    const payload = {
+      owner_user_id: currentUser.id,
+      title: document.getElementById("videoTitle").value,
+      artist_name: document.getElementById("videoArtist").value,
+      type: document.getElementById("videoType").value,
+      description: document.getElementById("videoDescription").value,
+      url: document.getElementById("videoUrl").value,
+      is_public: true
+    };
+
+    const { error } = await supabase.from("videos").insert(payload);
+    if (error) throw error;
+
+    videoMessage.textContent = "動画を投稿しました。";
+    videoForm.reset();
+    await loadMyVideos();
+  } catch (error) {
+    console.error(error);
+    videoMessage.textContent = "動画投稿に失敗しました。";
+  }
+});
+
+logoutBtn?.addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  location.href = "login.html";
+});
+
+async function init() {
+  currentUser = await requireUser();
+  if (!currentUser) return;
+
+  currentProfile = await loadProfile(currentUser.id);
+
+  userEmail.textContent = `ログイン中: ${currentUser.email}`;
+  userPlan.textContent = `現在のプラン: ${getSafePlan(currentProfile).toUpperCase()}`;
+
+  await loadMyEvents();
+  await loadMyArtists();
+  await loadMyVideos();
+}
+
+init();
