@@ -1,10 +1,13 @@
 import { supabase } from "./supabase.js";
 
+console.log("signup.js loaded");
+
 const signupForm = document.getElementById("signupForm");
 const message = document.getElementById("message");
 const submitButton = signupForm?.querySelector('button[type="submit"]');
 
 function setMessage(text, isError = false) {
+  console.log("setMessage:", text, isError);
   if (!message) return;
   message.textContent = text;
   message.style.color = isError ? "#ff8ea1" : "#7CFC9A";
@@ -12,6 +15,7 @@ function setMessage(text, isError = false) {
 
 signupForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  console.log("submit fired");
 
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
@@ -37,15 +41,14 @@ signupForm?.addEventListener("submit", async (e) => {
       password
     });
 
+    console.log("signUp result:", { data, error });
+
     if (error) {
       throw error;
     }
 
     signupForm.reset();
-
     setMessage("新規登録が完了しました。確認メールが届いている場合は、認証後にログインしてください。");
-
-    console.log("新規登録成功", data);
   } catch (error) {
     console.error("新規登録失敗:", error);
     setMessage(`新規登録に失敗しました: ${error.message}`, true);
