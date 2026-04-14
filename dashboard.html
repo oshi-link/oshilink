@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ダッシュボード | OshiLink</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo">OshiLink</div>
+      <nav>
+        <a href="index.html">トップ</a>
+        <a href="events.html">ライブ一覧</a>
+        <a href="login.html">ログアウト</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      
+      <div class="section-head">
+        <div>
+          <p class="section-label">DASHBOARD</p>
+          <h2>マイページ</h2>
+        </div>
+      </div>
+
+      <!-- ユーザー情報 -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-body">
+          <h3>ユーザー情報</h3>
+          <p id="userEmail">読み込み中...</p>
+        </div>
+      </div>
+
+      <!-- イベント投稿 -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-body">
+          <h3>イベント投稿</h3>
+
+          <form id="eventForm">
+            <input type="text" id="title" placeholder="タイトル" required />
+            <input type="text" id="artist" placeholder="出演者" required />
+            <input type="text" id="place" placeholder="場所" required />
+            <input type="text" id="area" placeholder="地域（例：東京）" required />
+            <input type="date" id="date" required />
+            <input type="text" id="time" placeholder="時間（例：18:00 START）" />
+            <input type="text" id="price" placeholder="料金" />
+            <input type="text" id="detailUrl" placeholder="詳細URL" />
+            <input type="text" id="ticketUrl" placeholder="チケットURL" />
+
+            <button type="submit" class="primary-btn">投稿する</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 自分のイベント一覧 -->
+      <div class="section-head">
+        <h3>投稿したイベント</h3>
+      </div>
+
+      <div id="myEvents" class="card-grid"></div>
+
+    </div>
+  </main>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
