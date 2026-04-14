@@ -1,26 +1,68 @@
-import { signIn, signUp } from './auth.js';
-import { getCurrentUser } from './supabase.js';
+import { supabase } from "./supabase.js";
 
-const loginForm = document.getElementById('loginForm');
-const signupForm = document.getElementById('signupForm');
-const messageBox = document.getElementById('messageBox');
-const setMessage = (text, type='success') => messageBox.innerHTML = `<div class="alert ${type}">${text}</div>`;
+const loginForm = document.getElementById("loginForm");
+const signupBtn = document.getElementById("signupBtn");
+const message = document.getElementById("message");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
 
-(async () => { const user = await getCurrentUser().catch(() => null); if (user) location.href = './dashboard.html'; })();
+function setMessage(text, isError = false) {
+  if (!message) return;
+  message.textContent = text;
+  message.style.color = isError ? "#ff8ea1" : "#d7c2ff";
+}
 
-loginForm.addEventListener('submit', async (e) => {
+async function handleLogin(e) {
   e.preventDefault();
-  try {
-    await signIn(document.getElementById('email').value.trim(), document.getElementById('password').value);
-    location.href = './dashboard.html';
-  } catch (error) { setMessage(`ログイン失敗: ${error.message}`, 'error'); }
-});
+  setMessage("");
 
-signupForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  try {
-    await signUp(document.getElementById('signupEmail').value.trim(), document.getElementById('signupPassword').value, document.getElementById('signupDisplayName').value.trim());
-    setMessage('登録しました。メール認証をONにしている場合は、届いたメールから認証してください。');
-    signupForm.reset();
-  } catch (error) { setMessage(`新規登録失敗: ${error.message}`, 'error'); }
-});
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    setMessage("メールアドレスとパスワードを入力してください。", true);
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    console.error("ログイン失敗:", error);
+    setMessage("ログインに失敗しました。入力内容をご確認ください。", true);
+    return;
+  }
+
+  setMessage("ログインしました。ダッシュボードへ移動します。");
+  location.href = "dashboard.html";
+}
+
+async function handleSignup() {
+  setMessage("");
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    setMessage("新規登録するには、先にメールアドレスとパスワードを入力してください。", true);
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    console.error("新規登録失敗:", error);
+    setMessage(`新規登録に失敗しました: ${error.message}`, true);
+    return;
+  }
+
+  setMessage("新規登録が完了しました。確認メールが届いた場合は認証後にログインしてください。");
+}
+
+loginForm?.addEventListener("submit", handleLogin);
+signupBtn?.addEventListener("click", handleSignup);
