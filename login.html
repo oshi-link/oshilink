@@ -18,37 +18,63 @@
       <div class="logo"><a href="index.html">OshiLink</a></div>
       <nav>
         <a href="index.html">トップ</a>
+        <a href="plans.html">料金プラン</a>
       </nav>
     </div>
   </header>
 
   <main class="section">
-    <div class="container" style="max-width: 480px;">
+    <div class="container" style="max-width: 520px;">
 
       <div class="section-head">
-        <h2>ログイン / 新規登録</h2>
+        <div>
+          <p class="section-label">LOGIN</p>
+          <h2>ログイン / 新規登録</h2>
+        </div>
       </div>
 
       <div class="card">
         <div class="card-body">
 
-          <form id="loginForm">
-            <input type="email" id="email" placeholder="メールアドレス" required />
-            <input type="password" id="password" placeholder="パスワード" required />
+          <form id="loginForm" style="display: grid; gap: 14px;">
+            <input
+              type="email"
+              id="email"
+              placeholder="メールアドレス"
+              required
+              style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; outline: none;"
+            />
 
-            <button type="submit" class="primary-btn">ログイン</button>
+            <input
+              type="password"
+              id="password"
+              placeholder="パスワード"
+              required
+              style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; outline: none;"
+            />
+
+            <button type="submit" class="primary-btn" style="width: 100%;">
+              ログイン
+            </button>
           </form>
 
-          <hr style="margin: 20px 0; opacity: 0.2;" />
+          <hr style="margin: 24px 0; opacity: 0.15;" />
 
           <button id="signupBtn" class="ghost-btn" style="width: 100%;">
             新規登録
           </button>
 
-          <p id="message" style="margin-top: 16px;"></p>
+          <p id="message" style="margin-top: 16px; color: #d7c2ff;"></p>
 
         </div>
       </div>
+
+    </div>
+  </main>
+
+  <script type="module" src="login.js"></script>
+</body>
+</html>
 
     </div>
   </main>
