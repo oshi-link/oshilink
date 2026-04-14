@@ -4,19 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ライブ一覧 | OshiLink</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <header class="site-header">
     <div class="container nav">
       <div class="logo"><a href="index.html">OshiLink</a></div>
       <nav>
-        <a href="index.html#today">ライブ情報</a>
+        <a href="index.html">トップ</a>
         <a href="index.html#calendar">カレンダー</a>
         <a href="index.html#artists">演者一覧</a>
+        <a href="login.html">ログイン</a>
       </nav>
     </div>
   </header>
@@ -24,6 +28,7 @@
   <main>
     <section class="section">
       <div class="container">
+
         <div class="section-head events-page-head">
           <div>
             <p class="section-label">LIVE LIST</p>
@@ -31,9 +36,8 @@
           </div>
 
           <div class="events-page-controls">
-            <button id="prevMonthBtn" class="toggle-btn" type="button">前の月</button>
-            
-            <button id="nextMonthBtn" class="toggle-btn" type="button">次の月</button>
+            <button id="prevMonthBtn" class="toggle-btn">前の月</button>
+            <button id="nextMonthBtn" class="toggle-btn">次の月</button>
 
             <div class="month-selector-wrap events-page-selector-wrap">
               <select id="eventsMonthSelector" class="month-selector">
@@ -55,11 +59,16 @@
         </div>
 
         <p id="eventsPageMonthLabel" class="events-page-month-label"></p>
+
+        <!-- イベント一覧 -->
         <div id="allEventsGrid" class="card-grid"></div>
+
       </div>
     </section>
   </main>
 
-  <script src="app.js"></script>
+  <!-- 🔥 ここ超重要 -->
+  <script type="module" src="app.js"></script>
+
 </body>
 </html>
