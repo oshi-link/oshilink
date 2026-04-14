@@ -1,7 +1,6 @@
 import { supabase } from "./supabase.js";
 
 const loginForm = document.getElementById("loginForm");
-const signupBtn = document.getElementById("signupBtn");
 const message = document.getElementById("message");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
@@ -65,4 +64,3 @@ async function handleSignup() {
 }
 
 loginForm?.addEventListener("submit", handleLogin);
-signupBtn?.addEventListener("click", handleSignup);
