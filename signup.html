@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>新規登録 | OshiLink</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <main class="section">
+    <div class="container" style="max-width: 520px;">
+      <h2>新規登録</h2>
+
+      <form id="signupForm" style="display: grid; gap: 14px;">
+        <input type="email" id="email" placeholder="メールアドレス" required />
+        <input type="password" id="password" placeholder="パスワード" required />
+        <button type="submit" class="primary-btn">登録する</button>
+      </form>
+
+      <p id="message"></p>
+    </div>
+  </main>
+
+  <script type="module" src="signup.js"></script>
+</body>
+</html>
