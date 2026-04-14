@@ -2,23 +2,86 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>新規登録 | OshiLink</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo"><a href="index.html">OshiLink</a></div>
+      <nav>
+        <a href="index.html">トップ</a>
+        <a href="plans.html">料金プラン</a>
+        <a href="login.html">ログイン</a>
+      </nav>
+    </div>
+  </header>
 
   <main class="section">
     <div class="container" style="max-width: 520px;">
-      <h2>新規登録</h2>
+      <div class="section-head">
+        <div>
+          <p class="section-label">SIGN UP</p>
+          <h2>新規登録</h2>
+          <p class="helper-text" style="margin-top: 8px;">
+            アカウントを作成すると、イベントや動画の投稿ができるようになります。
+          </p>
+        </div>
+      </div>
 
-      <form id="signupForm" style="display: grid; gap: 14px;">
-        <input type="email" id="email" placeholder="メールアドレス" required />
-        <input type="password" id="password" placeholder="パスワード" required />
-        <button type="submit" class="primary-btn">登録する</button>
-      </form>
+      <div class="card">
+        <div class="card-body">
+          <form id="signupForm" style="display: grid; gap: 14px;">
+            <input
+              type="email"
+              id="email"
+              placeholder="メールアドレス"
+              required
+              style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; outline: none;"
+            />
 
-      <p id="message"></p>
+            <input
+              type="password"
+              id="password"
+              placeholder="パスワード"
+              required
+              style="width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); color: #fff; font-size: 1rem; outline: none;"
+            />
+
+            <button type="submit" class="primary-btn" style="width: 100%;">
+              登録する
+            </button>
+          </form>
+
+          <p id="message" style="margin-top: 16px; color: #d7c2ff;"></p>
+
+          <hr style="margin: 24px 0; opacity: 0.15;" />
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a
+              href="login.html"
+              class="ghost-btn"
+              style="flex: 1; text-align: center;"
+            >
+              ログインへ戻る
+            </a>
+
+            <a
+              href="index.html"
+              class="ghost-btn"
+              style="flex: 1; text-align: center;"
+            >
+              トップへ戻る
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
