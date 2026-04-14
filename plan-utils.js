@@ -25,3 +25,16 @@ export function sortByPlanPriority(items) {
     return new Date(a.created_at) - new Date(b.created_at);
   });
 }
+
+export function getPlanLimits(plan) {
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+
+  return {
+    maxArtists: Number.isFinite(limits.artists) ? limits.artists : null,
+    maxEvents: Number.isFinite(limits.events) ? limits.events : null,
+    maxVideos: Number.isFinite(limits.videos) ? limits.videos : null,
+    analytics: limits.analytics,
+    advancedArtistPage: limits.advancedArtistPage,
+    priorityLevel: limits.priorityLevel
+  };
+}
