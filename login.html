@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ログイン | OshiLink</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo"><a href="index.html">OshiLink</a></div>
+      <nav>
+        <a href="index.html">トップ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container" style="max-width: 480px;">
+
+      <div class="section-head">
+        <h2>ログイン / 新規登録</h2>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+
+          <form id="loginForm">
+            <input type="email" id="email" placeholder="メールアドレス" required />
+            <input type="password" id="password" placeholder="パスワード" required />
+
+            <button type="submit" class="primary-btn">ログイン</button>
+          </form>
+
+          <hr style="margin: 20px 0; opacity: 0.2;" />
+
+          <button id="signupBtn" class="ghost-btn" style="width: 100%;">
+            新規登録
+          </button>
+
+          <p id="message" style="margin-top: 16px;"></p>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- 🔥 これ超重要 -->
+  <script type="module" src="login.js"></script>
+
+</body>
+</html>
