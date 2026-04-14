@@ -41,14 +41,11 @@ signupForm?.addEventListener("submit", async (e) => {
       throw error;
     }
 
-    if (data?.user?.identities?.length === 0) {
-      setMessage("このメールアドレスは既に登録済みの可能性があります。ログインをお試しください。", true);
-      return;
-    }
-
     signupForm.reset();
+
     setMessage("新規登録が完了しました。確認メールが届いている場合は、認証後にログインしてください。");
 
+    console.log("新規登録成功", data);
   } catch (error) {
     console.error("新規登録失敗:", error);
     setMessage(`新規登録に失敗しました: ${error.message}`, true);
