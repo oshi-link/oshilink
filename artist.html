@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>演者詳細 | OshiLink</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <div class="logo"><a href="index.html">OshiLink</a></div>
+      <nav>
+        <a href="index.html">トップ</a>
+        <a href="events.html">ライブ一覧</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+
+      <!-- 演者詳細 -->
+      <div class="card" id="artistDetail">
+        <div class="card-body">
+          <h2 id="artistName">読み込み中...</h2>
+          <p id="artistDescription"></p>
+
+          <div id="artistLinks" style="margin-top: 12px;"></div>
+        </div>
+      </div>
+
+      <!-- 動画一覧 -->
+      <div class="section-head" style="margin-top: 40px;">
+        <h3>動画一覧</h3>
+      </div>
+
+      <div id="artistVideos" class="card-grid"></div>
+
+      <!-- イベント一覧 -->
+      <div class="section-head" style="margin-top: 40px;">
+        <h3>出演イベント</h3>
+      </div>
+
+      <div id="artistEvents" class="card-grid"></div>
+
+    </div>
+  </main>
+
+  <script type="module" src="artist.js"></script>
+</body>
+</html>
