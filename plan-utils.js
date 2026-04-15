@@ -1,13 +1,53 @@
 export const PLAN_LIMITS = {
-  free: { artists: 1, events: 3, videos: 3, analytics: false, advancedArtistPage: false, priorityLevel: 0 },
-  standard: { artists: 3, events: Infinity, videos: Infinity, analytics: true, advancedArtistPage: false, priorityLevel: 1 },
-  premium: { artists: Infinity, events: Infinity, videos: Infinity, analytics: true, advancedArtistPage: true, priorityLevel: 2 }
+  free: {
+    artists: 1,
+    events: 3,
+    videos: 3,
+    monthlyEventCreates: 5,
+    analytics: false,
+    advancedArtistPage: false,
+    priorityLevel: 0
+  },
+  standard: {
+    artists: 3,
+    events: Infinity,
+    videos: Infinity,
+    monthlyEventCreates: Infinity,
+    analytics: true,
+    advancedArtistPage: false,
+    priorityLevel: 1
+  },
+  premium: {
+    artists: Infinity,
+    events: Infinity,
+    videos: Infinity,
+    monthlyEventCreates: Infinity,
+    analytics: true,
+    advancedArtistPage: true,
+    priorityLevel: 2
+  }
 };
 
 export function getPlanLabel(plan) {
-  if (plan === 'standard') return 'STANDARD';
-  if (plan === 'premium') return 'PREMIUM';
-  return 'FREE';
+  if (plan === "standard") return "STANDARD";
+  if (plan === "premium") return "PREMIUM";
+  return "FREE";
+}
+
+export function getPlanLimits(plan) {
+  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+
+  return {
+    maxArtists: Number.isFinite(limits.artists) ? limits.artists : null,
+    maxEvents: Number.isFinite(limits.events) ? limits.events : null,
+    maxVideos: Number.isFinite(limits.videos) ? limits.videos : null,
+    maxMonthlyEventCreates: Number.isFinite(limits.monthlyEventCreates)
+      ? limits.monthlyEventCreates
+      : null,
+    analytics: limits.analytics,
+    advancedArtistPage: limits.advancedArtistPage,
+    priorityLevel: limits.priorityLevel
+  };
 }
 
 export function canCreateCount(plan, type, currentCount) {
@@ -24,17 +64,4 @@ export function sortByPlanPriority(items) {
     if (scoreA !== scoreB) return scoreB - scoreA;
     return new Date(a.created_at) - new Date(b.created_at);
   });
-}
-
-export function getPlanLimits(plan) {
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-
-  return {
-    maxArtists: Number.isFinite(limits.artists) ? limits.artists : null,
-    maxEvents: Number.isFinite(limits.events) ? limits.events : null,
-    maxVideos: Number.isFinite(limits.videos) ? limits.videos : null,
-    analytics: limits.analytics,
-    advancedArtistPage: limits.advancedArtistPage,
-    priorityLevel: limits.priorityLevel
-  };
 }
