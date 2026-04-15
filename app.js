@@ -128,13 +128,14 @@ async function loadArtists() {
 
     if (error) throw error;
 
-    artists = (data || []).map(item => ({
-      name: item.name,
-      icon: item.icon_path || "",
-      description: item.description || "",
-      xUrl: item.x_url || "",
-      detailUrl: item.detail_slug ? `artist.html?slug=${item.detail_slug}` : ""
-    }));
+artists = (data || []).map(item => ({
+  name: item.name,
+  icon: item.icon_path || "",
+  description: item.description || "",
+  xUrl: item.x_url || "",
+  externalUrl: item.header_image_url || "",
+  detailUrl: item.detail_slug ? `artist.html?slug=${item.detail_slug}` : ""
+}));
 
     renderArtists(artists);
   } catch (error) {
@@ -265,7 +266,8 @@ function renderArtists(list) {
 
       <div class="artist-card-overlay">
         ${item.xUrl ? `<a href="${item.xUrl}" class="artist-action-btn x-btn" target="_blank" rel="noopener noreferrer">X</a>` : ""}
-        ${item.detailUrl ? `<a href="${item.detailUrl}" class="artist-action-btn detail-btn">もっと見る</a>` : ""}
+        ${item.externalUrl ? `<a href="${item.externalUrl}" class="artist-action-btn detail-btn" target="_blank" rel="noopener noreferrer">詳細</a>` : ""}
+        ${item.detailUrl ? `<a href="${item.detailUrl}" class="artist-action-btn detail-btn">プロフィール</a>` : ""}
       </div>
     </article>
   `).join("");
