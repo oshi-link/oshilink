@@ -54,6 +54,7 @@ async function loadEvents() {
       .from("events")
       .select("*")
       .eq("status", "published")
+      .is("deleted_at", null)
       .order("event_date", { ascending: true });
 
     if (error) throw error;
@@ -94,6 +95,7 @@ async function loadVideos() {
       .from("videos")
       .select("*")
       .eq("is_public", true)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -121,6 +123,7 @@ async function loadArtists() {
       .from("artists")
       .select("*")
       .eq("is_public", true)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
