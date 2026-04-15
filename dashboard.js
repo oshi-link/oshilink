@@ -8,6 +8,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 const artistRequiredNotice = document.getElementById("artistRequiredNotice");
 const eventCard = document.getElementById("eventCard");
+const videoCard = document.getElementById("videoCard");
 
 const eventForm = document.getElementById("eventForm");
 const eventMessage = document.getElementById("eventMessage");
@@ -196,10 +197,12 @@ function applyArtistGate() {
   if (primaryArtist) {
     artistRequiredNotice.style.display = "none";
     eventCard.style.display = "block";
+    videoCard.style.display = "block";
     registeredArtistName.textContent = `登録済み演者: ${primaryArtist.name}`;
   } else {
     artistRequiredNotice.style.display = "block";
     eventCard.style.display = "none";
+    videoCard.style.display = "none";
     registeredArtistName.textContent = "登録済み演者: 未登録";
   }
 }
@@ -397,7 +400,12 @@ function renderVideos(list) {
       const ok = confirm("この動画を削除しますか？");
       if (!ok) return;
 
-      const { error } = await supabase.from("videos").delete().eq("id", id);
+      const { error } = await supabase
+        .from("videos")
+        .delete()
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
       if (error) {
         alert("削除に失敗しました");
         console.error(error);
@@ -586,6 +594,11 @@ videoForm?.addEventListener("submit", async (e) => {
   videoMessage.textContent = "";
 
   try {
+    if (!primaryArtist) {
+      videoMessage.textContent = "先に演者登録を行ってください。";
+      return;
+    }
+
     const limits = getPlanLimits(getSafePlan(currentProfile));
     const currentCount = await countUserVideos(currentUser.id);
 
@@ -596,11 +609,11 @@ videoForm?.addEventListener("submit", async (e) => {
 
     const payload = {
       owner_user_id: currentUser.id,
-      title: document.getElementById("videoTitle").value,
-      artist_name: document.getElementById("videoArtist").value,
-      type: document.getElementById("videoType").value,
-      description: document.getElementById("videoDescription").value,
-      url: document.getElementById("videoUrl").value,
+      title: document.getElementById("videoTitle").value.trim(),
+      artist_name: primaryArtist.name,
+      type: document.getElementById("videoType").value.trim(),
+      description: document.getElementById("videoDescription").value.trim(),
+      url: document.getElementById("videoUrl").value.trim(),
       is_public: true
     };
 
