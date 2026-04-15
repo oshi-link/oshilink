@@ -30,6 +30,10 @@ let currentUser = null;
 let currentProfile = null;
 let primaryArtist = null;
 
+let editingEventId = null;
+let editingArtistId = null;
+let editingVideoId = null;
+
 async function requireUser() {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
@@ -124,12 +128,26 @@ function buildTimeText() {
   return `${openHour}:${openMinute} OPEN / ${startHour}:${startMinute} START`;
 }
 
+function fillTimeSelectorsFromText(timeText = "") {
+  const match = timeText.match(/(\d{1,2}):(\d{2})\s*OPEN\s*\/\s*(\d{1,2}):(\d{2})\s*START/i);
+  if (!match) {
+    setupTimeSelectors();
+    return;
+  }
+
+  document.getElementById("openHour").value = String(match[1]).padStart(2, "0");
+  document.getElementById("openMinute").value = String(match[2]).padStart(2, "0");
+  document.getElementById("startHour").value = String(match[3]).padStart(2, "0");
+  document.getElementById("startMinute").value = String(match[4]).padStart(2, "0");
+}
+
 async function countPublishedEvents(userId) {
   const { count, error } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
     .eq("owner_user_id", userId)
-    .eq("status", "published");
+    .eq("status", "published")
+    .is("deleted_at", null);
 
   if (error) throw error;
   return count || 0;
@@ -153,7 +171,8 @@ async function countUserVideos(userId) {
   const { count, error } = await supabase
     .from("videos")
     .select("*", { count: "exact", head: true })
-    .eq("owner_user_id", userId);
+    .eq("owner_user_id", userId)
+    .is("deleted_at", null);
 
   if (error) throw error;
   return count || 0;
@@ -164,6 +183,7 @@ async function loadPrimaryArtist() {
     .from("artists")
     .select("*")
     .eq("owner_user_id", currentUser.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(1);
 
@@ -213,6 +233,61 @@ function getEventStatusLabel(status) {
   return "公開中";
 }
 
+function resetEventForm() {
+  editingEventId = null;
+  eventForm.reset();
+  setupTimeSelectors();
+  applyPlanRestrictions();
+  eventForm.querySelector('button[type="submit"]').textContent = "イベントを投稿する";
+}
+
+function resetArtistForm() {
+  editingArtistId = null;
+  artistForm.reset();
+  applyPlanRestrictions();
+  artistForm.querySelector('button[type="submit"]').textContent = "演者を登録する";
+}
+
+function resetVideoForm() {
+  editingVideoId = null;
+  videoForm.reset();
+  videoForm.querySelector('button[type="submit"]').textContent = "動画を投稿する";
+}
+
+function startEditEvent(item) {
+  editingEventId = item.id;
+  document.getElementById("title").value = item.title || "";
+  document.getElementById("area").value = item.area || "";
+  document.getElementById("place").value = item.place || "";
+  document.getElementById("date").value = item.event_date || "";
+  document.getElementById("price").value = item.price || "";
+  detailUrlInput.value = item.detail_url || "";
+  ticketUrlInput.value = item.ticket_url || "";
+  fillTimeSelectorsFromText(item.time_text || "");
+  eventForm.querySelector('button[type="submit"]').textContent = "イベントを更新する";
+  eventForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function startEditArtist(item) {
+  editingArtistId = item.id;
+  document.getElementById("artistName").value = item.name || "";
+  document.getElementById("artistDescription").value = item.description || "";
+  document.getElementById("artistXUrl").value = item.x_url || "";
+  artistDetailSlugInput.value = item.detail_slug || "";
+  artistForm.querySelector('button[type="submit"]').textContent = "演者情報を更新する";
+  artistForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function startEditVideo(item) {
+  editingVideoId = item.id;
+  document.getElementById("videoTitle").value = item.title || "";
+  document.getElementById("videoType").value = item.type || "";
+  document.getElementById("videoDescription").value = item.description || "";
+  document.getElementById("videoUrl").value = item.url || "";
+  videoForm.querySelector('button[type="submit"]').textContent = "動画を更新する";
+  videoForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function renderEvents(list) {
   if (!myEvents) return;
 
@@ -243,16 +318,32 @@ function renderEvents(list) {
           <span>🕒 ${item.time_text || ""}</span>
         </div>
         <div class="card-actions">
+          <button class="ghost-btn event-edit-btn" data-id="${item.id}">修正</button>
           ${
             item.status === "published"
-              ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開にする</button>`
-              : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開する</button>`
+              ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開</button>`
+              : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開</button>`
           }
           <button class="ghost-btn event-delete-btn" data-id="${item.id}">削除</button>
         </div>
       </div>
     </article>
   `).join("");
+
+  document.querySelectorAll(".event-edit-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id)
+        .single();
+
+      if (error || !data) return;
+      startEditEvent(data);
+    });
+  });
 
   document.querySelectorAll(".event-private-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
@@ -314,12 +405,15 @@ function renderEvents(list) {
   document.querySelectorAll(".event-delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const ok = confirm("このイベントを完全に削除しますか？この操作は元に戻せません。");
+      const ok = confirm("このイベントを削除しますか？");
       if (!ok) return;
 
       const { error } = await supabase
         .from("events")
-        .delete()
+        .update({
+          status: "deleted",
+          deleted_at: new Date().toISOString()
+        })
         .eq("id", id)
         .eq("owner_user_id", currentUser.id);
 
@@ -329,6 +423,7 @@ function renderEvents(list) {
         return;
       }
 
+      if (editingEventId === id) resetEventForm();
       await loadMyEvents();
       await refreshPlanSummary();
     });
@@ -360,9 +455,58 @@ function renderArtists(list) {
           <span>🔗 ${item.x_url || ""}</span>
           <span>🆔 ${item.detail_slug || "-"}</span>
         </div>
+        <div class="card-actions">
+          <button class="ghost-btn artist-edit-btn" data-id="${item.id}">修正</button>
+          ${item.detail_slug ? `<a href="artist.html?slug=${item.detail_slug}" class="mini-btn" target="_blank" rel="noopener noreferrer">プロフィール</a>` : ""}
+          <button class="ghost-btn artist-delete-btn" data-id="${item.id}">削除</button>
+        </div>
       </div>
     </article>
   `).join("");
+
+  document.querySelectorAll(".artist-edit-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const { data, error } = await supabase
+        .from("artists")
+        .select("*")
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id)
+        .single();
+
+      if (error || !data) return;
+      startEditArtist(data);
+    });
+  });
+
+  document.querySelectorAll(".artist-delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const ok = confirm("この演者を削除しますか？");
+      if (!ok) return;
+
+      const { error } = await supabase
+        .from("artists")
+        .update({
+          is_public: false,
+          deleted_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
+      if (error) {
+        alert("削除に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      if (editingArtistId === id) resetArtistForm();
+
+      primaryArtist = await loadPrimaryArtist();
+      applyArtistGate();
+      await loadMyArtists();
+    });
+  });
 }
 
 function renderVideos(list) {
@@ -387,14 +531,30 @@ function renderVideos(list) {
           <span>🏷 ${item.type || ""}</span>
         </div>
         <div class="card-actions">
+          <button class="ghost-btn video-edit-btn" data-id="${item.id}">修正</button>
           ${item.url ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>` : ""}
-          <button class="ghost-btn delete-video-btn" data-id="${item.id}">削除</button>
+          <button class="ghost-btn video-delete-btn" data-id="${item.id}">削除</button>
         </div>
       </div>
     </article>
   `).join("");
 
-  document.querySelectorAll(".delete-video-btn").forEach(btn => {
+  document.querySelectorAll(".video-edit-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const { data, error } = await supabase
+        .from("videos")
+        .select("*")
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id)
+        .single();
+
+      if (error || !data) return;
+      startEditVideo(data);
+    });
+  });
+
+  document.querySelectorAll(".video-delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
       const ok = confirm("この動画を削除しますか？");
@@ -402,7 +562,10 @@ function renderVideos(list) {
 
       const { error } = await supabase
         .from("videos")
-        .delete()
+        .update({
+          is_public: false,
+          deleted_at: new Date().toISOString()
+        })
         .eq("id", id)
         .eq("owner_user_id", currentUser.id);
 
@@ -412,6 +575,7 @@ function renderVideos(list) {
         return;
       }
 
+      if (editingVideoId === id) resetVideoForm();
       await loadMyVideos();
     });
   });
@@ -422,6 +586,7 @@ async function loadMyEvents() {
     .from("events")
     .select("*")
     .eq("owner_user_id", currentUser.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -437,6 +602,7 @@ async function loadMyArtists() {
     .from("artists")
     .select("*")
     .eq("owner_user_id", currentUser.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -452,6 +618,7 @@ async function loadMyVideos() {
     .from("videos")
     .select("*")
     .eq("owner_user_id", currentUser.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -489,28 +656,45 @@ eventForm?.addEventListener("submit", async (e) => {
       return;
     }
 
-    const limits = getPlanLimits(getSafePlan(currentProfile));
-    const publishedCount = await countPublishedEvents(currentUser.id);
-    const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
-
-    if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
-      eventMessage.textContent = `このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`;
-      return;
-    }
-
-    if (
-      limits.maxMonthlyEventCreates !== null &&
-      monthlyCreateCount >= limits.maxMonthlyEventCreates
-    ) {
-      eventMessage.textContent = `このプランでは今月の新規イベント作成は ${limits.maxMonthlyEventCreates} 件までです。`;
-      return;
-    }
-
     const plan = getSafePlan(currentProfile);
     const paid = isPaidPlan(plan);
 
+    if (!editingEventId) {
+      const limits = getPlanLimits(plan);
+      const publishedCount = await countPublishedEvents(currentUser.id);
+      const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
+
+      if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
+        eventMessage.textContent = `このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`;
+        return;
+      }
+
+      if (
+        limits.maxMonthlyEventCreates !== null &&
+        monthlyCreateCount >= limits.maxMonthlyEventCreates
+      ) {
+        eventMessage.textContent = `このプランでは今月の新規イベント作成は ${limits.maxMonthlyEventCreates} 件までです。`;
+        return;
+      }
+    }
+
     const imageFile = document.getElementById("eventImage").files[0];
-    const imageUrl = await uploadImage("event-images", imageFile, currentUser.id);
+    let imageUrl = "";
+
+    if (editingEventId) {
+      const { data: currentEvent } = await supabase
+        .from("events")
+        .select("image_path")
+        .eq("id", editingEventId)
+        .eq("owner_user_id", currentUser.id)
+        .single();
+
+      imageUrl = currentEvent?.image_path || "";
+    }
+
+    if (imageFile) {
+      imageUrl = await uploadImage("event-images", imageFile, currentUser.id);
+    }
 
     const payload = {
       owner_user_id: currentUser.id,
@@ -524,16 +708,26 @@ eventForm?.addEventListener("submit", async (e) => {
       detail_url: paid ? detailUrlInput.value.trim() : "",
       ticket_url: paid ? ticketUrlInput.value.trim() : "",
       image_path: imageUrl,
-      status: "published"
+      status: "published",
+      deleted_at: null
     };
 
-    const { error } = await supabase.from("events").insert(payload);
+    let error;
+
+    if (editingEventId) {
+      ({ error } = await supabase
+        .from("events")
+        .update(payload)
+        .eq("id", editingEventId)
+        .eq("owner_user_id", currentUser.id));
+    } else {
+      ({ error } = await supabase.from("events").insert(payload));
+    }
+
     if (error) throw error;
 
-    eventMessage.textContent = "イベントを投稿しました。";
-    eventForm.reset();
-    setupTimeSelectors();
-    applyPlanRestrictions();
+    eventMessage.textContent = editingEventId ? "イベントを更新しました。" : "イベントを投稿しました。";
+    resetEventForm();
 
     await loadMyEvents();
     await refreshPlanSummary();
@@ -551,16 +745,23 @@ artistForm?.addEventListener("submit", async (e) => {
     const plan = getSafePlan(currentProfile);
     const paid = isPaidPlan(plan);
 
-    const existingArtist = await loadPrimaryArtist();
-    if (existingArtist) {
-      artistMessage.textContent = "このアカウントでは既に演者登録済みです。";
-      primaryArtist = existingArtist;
-      applyArtistGate();
-      return;
+    let iconUrl = "";
+
+    if (editingArtistId) {
+      const { data: currentArtist } = await supabase
+        .from("artists")
+        .select("icon_path")
+        .eq("id", editingArtistId)
+        .eq("owner_user_id", currentUser.id)
+        .single();
+
+      iconUrl = currentArtist?.icon_path || "";
     }
 
     const iconFile = document.getElementById("artistIcon").files[0];
-    const iconUrl = await uploadImage("artist-icons", iconFile, currentUser.id);
+    if (iconFile) {
+      iconUrl = await uploadImage("artist-icons", iconFile, currentUser.id);
+    }
 
     const payload = {
       owner_user_id: currentUser.id,
@@ -569,15 +770,32 @@ artistForm?.addEventListener("submit", async (e) => {
       icon_path: iconUrl,
       x_url: document.getElementById("artistXUrl").value.trim(),
       detail_slug: paid ? (artistDetailSlugInput.value.trim() || null) : null,
-      is_public: true
+      is_public: true,
+      deleted_at: null
     };
 
-    const { error } = await supabase.from("artists").insert(payload);
+    let error;
+
+    if (editingArtistId) {
+      ({ error } = await supabase
+        .from("artists")
+        .update(payload)
+        .eq("id", editingArtistId)
+        .eq("owner_user_id", currentUser.id));
+    } else {
+      const existingArtist = await loadPrimaryArtist();
+      if (existingArtist) {
+        artistMessage.textContent = "このアカウントでは既に演者登録済みです。修正ボタンから更新してください。";
+        return;
+      }
+
+      ({ error } = await supabase.from("artists").insert(payload));
+    }
+
     if (error) throw error;
 
-    artistMessage.textContent = "演者を登録しました。";
-    artistForm.reset();
-    applyPlanRestrictions();
+    artistMessage.textContent = editingArtistId ? "演者情報を更新しました。" : "演者を登録しました。";
+    resetArtistForm();
 
     primaryArtist = await loadPrimaryArtist();
     applyArtistGate();
@@ -599,12 +817,14 @@ videoForm?.addEventListener("submit", async (e) => {
       return;
     }
 
-    const limits = getPlanLimits(getSafePlan(currentProfile));
-    const currentCount = await countUserVideos(currentUser.id);
+    if (!editingVideoId) {
+      const limits = getPlanLimits(getSafePlan(currentProfile));
+      const currentCount = await countUserVideos(currentUser.id);
 
-    if (limits.maxVideos !== null && currentCount >= limits.maxVideos) {
-      videoMessage.textContent = `このプランでは動画は ${limits.maxVideos} 件までです。`;
-      return;
+      if (limits.maxVideos !== null && currentCount >= limits.maxVideos) {
+        videoMessage.textContent = `このプランでは動画は ${limits.maxVideos} 件までです。`;
+        return;
+      }
     }
 
     const payload = {
@@ -614,14 +834,26 @@ videoForm?.addEventListener("submit", async (e) => {
       type: document.getElementById("videoType").value.trim(),
       description: document.getElementById("videoDescription").value.trim(),
       url: document.getElementById("videoUrl").value.trim(),
-      is_public: true
+      is_public: true,
+      deleted_at: null
     };
 
-    const { error } = await supabase.from("videos").insert(payload);
+    let error;
+
+    if (editingVideoId) {
+      ({ error } = await supabase
+        .from("videos")
+        .update(payload)
+        .eq("id", editingVideoId)
+        .eq("owner_user_id", currentUser.id));
+    } else {
+      ({ error } = await supabase.from("videos").insert(payload));
+    }
+
     if (error) throw error;
 
-    videoMessage.textContent = "動画を投稿しました。";
-    videoForm.reset();
+    videoMessage.textContent = editingVideoId ? "動画を更新しました。" : "動画を投稿しました。";
+    resetVideoForm();
     await loadMyVideos();
   } catch (error) {
     console.error(error);
