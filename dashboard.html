@@ -50,7 +50,7 @@
           <h3>先に演者登録を行ってください</h3>
           <p class="helper-text">
             OshiLinkでは、演者登録がアカウント情報の代わりになります。<br>
-            まだ演者情報が未登録のため、イベント投稿は演者登録完了後に利用できます。
+            まだ演者情報が未登録のため、イベント投稿と動画投稿は演者登録完了後に利用できます。
           </p>
         </div>
       </div>
@@ -156,7 +156,6 @@
             </div>
 
             <input type="text" id="price" placeholder="料金" />
-
             <input type="text" id="detailUrl" placeholder="詳細URL（有料プランのみ）" />
             <input type="text" id="ticketUrl" placeholder="チケットURL（有料プランのみ）" />
 
@@ -172,13 +171,12 @@
         </div>
       </div>
 
-      <div class="card" style="margin-bottom: 24px;">
+      <div class="card" id="videoCard" style="margin-bottom: 24px;">
         <div class="card-body">
           <h3>動画投稿</h3>
 
           <form id="videoForm" style="display: grid; gap: 12px;">
             <input type="text" id="videoTitle" placeholder="動画タイトル" required />
-            <input type="text" id="videoArtist" placeholder="演者名" required />
             <input type="text" id="videoType" placeholder="種別（例：歌ってみた）" />
             <input type="text" id="videoDescription" placeholder="説明" />
             <input type="text" id="videoUrl" placeholder="動画URL" />
