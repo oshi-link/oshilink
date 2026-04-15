@@ -300,6 +300,8 @@ function renderEvents(list) {
     return;
   }
 
+  const paid = isPaidPlan(getSafePlan(currentProfile));
+
   myEvents.innerHTML = list.map(item => {
     const isEditing = editingEventId === item.id;
 
@@ -309,8 +311,8 @@ function renderEvents(list) {
           <div class="card-body">
             <h3>イベント修正</h3>
             <div style="display: grid; gap: 12px;">
-              <input type="text" id="editEventTitle_${item.id}" value="${item.title || ""}" placeholder="タイトル" />
-              
+              <input type="text" id="editEventTitle_${item.id}" value="${escapeHtml(item.title || "")}" placeholder="タイトル" />
+
               <select id="editEventArea_${item.id}">
                 <option value="">地域を選択してください</option>
                 ${[
@@ -321,12 +323,26 @@ function renderEvents(list) {
                 ].map(area => `<option value="${area}" ${item.area === area ? "selected" : ""}>${area}</option>`).join("")}
               </select>
 
-              <input type="text" id="editEventPlace_${item.id}" value="${item.place || ""}" placeholder="場所" />
-              <input type="date" id="editEventDate_${item.id}" value="${item.event_date || ""}" />
-              <input type="text" id="editEventTime_${item.id}" value="${item.time_text || ""}" placeholder="18:00 OPEN / 18:30 START" />
-              <input type="text" id="editEventPrice_${item.id}" value="${item.price || ""}" placeholder="料金" />
-              <input type="text" id="editEventDetailUrl_${item.id}" value="${item.detail_url || ""}" placeholder="詳細URL" />
-              <input type="text" id="editEventTicketUrl_${item.id}" value="${item.ticket_url || ""}" placeholder="チケットURL" />
+              <input type="text" id="editEventPlace_${item.id}" value="${escapeHtml(item.place || "")}" placeholder="場所" />
+              <input type="date" id="editEventDate_${item.id}" value="${escapeHtml(item.event_date || "")}" />
+              <input type="text" id="editEventTime_${item.id}" value="${escapeHtml(item.time_text || "")}" placeholder="18:00 OPEN / 18:30 START" />
+              <input type="text" id="editEventPrice_${item.id}" value="${escapeHtml(item.price || "")}" placeholder="料金" />
+
+              <input
+                type="text"
+                id="editEventDetailUrl_${item.id}"
+                value="${escapeHtml(item.detail_url || "")}"
+                placeholder="${paid ? "詳細URL" : "詳細URL（有料プランのみ）"}"
+                ${paid ? "" : "disabled"}
+              />
+
+              <input
+                type="text"
+                id="editEventTicketUrl_${item.id}"
+                value="${escapeHtml(item.ticket_url || "")}"
+                placeholder="${paid ? "チケットURL" : "チケットURL（有料プランのみ）"}"
+                ${paid ? "" : "disabled"}
+              />
 
               <div class="card-actions">
                 <button class="primary-btn save-event-btn" data-id="${item.id}">保存</button>
@@ -341,19 +357,19 @@ function renderEvents(list) {
     return `
       <article class="card">
         <div class="card-image">
-          ${item.image_path ? `<img src="${item.image_path}" alt="${item.title}" loading="lazy">` : ""}
+          ${item.image_path ? `<img src="${item.image_path}" alt="${escapeHtml(item.title)}" loading="lazy">` : ""}
           <span class="badge ${item.status === "private" ? "ended" : ""}">
             ${getEventStatusLabel(item.status)}
           </span>
         </div>
         <div class="card-body">
-          <h3>${item.title}</h3>
+          <h3>${escapeHtml(item.title)}</h3>
           <div class="meta">
-            <span>🎤 ${item.artist_name}</span>
-            <span>📍 ${item.place}</span>
-            <span>🗾 ${item.area}</span>
-            <span>📅 ${item.event_date}</span>
-            <span>🕒 ${item.time_text || ""}</span>
+            <span>🎤 ${escapeHtml(item.artist_name || "")}</span>
+            <span>📍 ${escapeHtml(item.place || "")}</span>
+            <span>🗾 ${escapeHtml(item.area || "")}</span>
+            <span>📅 ${escapeHtml(item.event_date || "")}</span>
+            <span>🕒 ${escapeHtml(item.time_text || "")}</span>
           </div>
           <div class="card-actions">
             <button class="ghost-btn event-edit-btn" data-id="${item.id}">修正</button>
@@ -394,8 +410,8 @@ function renderEvents(list) {
         event_date: document.getElementById(`editEventDate_${id}`).value,
         time_text: document.getElementById(`editEventTime_${id}`).value.trim(),
         price: document.getElementById(`editEventPrice_${id}`).value.trim(),
-        detail_url: document.getElementById(`editEventDetailUrl_${id}`).value.trim(),
-        ticket_url: document.getElementById(`editEventTicketUrl_${id}`).value.trim()
+        detail_url: paid ? document.getElementById(`editEventDetailUrl_${id}`).value.trim() : (item.detail_url || ""),
+        ticket_url: paid ? document.getElementById(`editEventTicketUrl_${id}`).value.trim() : (item.ticket_url || "")
       };
 
       const { error } = await supabase
@@ -441,6 +457,14 @@ function renderEvents(list) {
   document.querySelectorAll(".event-restore-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
+
+      const limits = getPlanLimits(getSafePlan(currentProfile));
+      const publishedCount = await countPublishedEvents(currentUser.id);
+
+      if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
+        alert(`このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`);
+        return;
+      }
 
       const { error } = await supabase
         .from("events")
@@ -499,6 +523,8 @@ function renderArtists(list) {
     return;
   }
 
+  const paid = isPaidPlan(getSafePlan(currentProfile));
+
   myArtists.innerHTML = list.map(item => {
     const isEditing = editingArtistId === item.id;
 
@@ -508,10 +534,18 @@ function renderArtists(list) {
           <div class="card-body">
             <h3>演者情報修正</h3>
             <div style="display: grid; gap: 12px;">
-              <input type="text" id="editArtistName_${item.id}" value="${item.name || ""}" placeholder="演者名" />
-              <input type="text" id="editArtistDescription_${item.id}" value="${item.description || ""}" placeholder="説明" />
-              <input type="text" id="editArtistXUrl_${item.id}" value="${item.x_url || ""}" placeholder="XのURL" />
-              <input type="text" id="editArtistSlug_${item.id}" value="${item.detail_slug || ""}" placeholder="詳細URL用slug" />
+              <input type="text" id="editArtistName_${item.id}" value="${escapeHtml(item.name || "")}" placeholder="演者名" />
+              <input type="text" id="editArtistDescription_${item.id}" value="${escapeHtml(item.description || "")}" placeholder="説明" />
+              <input type="text" id="editArtistXUrl_${item.id}" value="${escapeHtml(item.x_url || "")}" placeholder="XのURL" />
+              <input type="text" id="editArtistExternalUrl_${item.id}" value="${escapeHtml(item.external_url || "")}" placeholder="その他詳細URL" />
+
+              <input
+                type="text"
+                id="editArtistSlug_${item.id}"
+                value="${escapeHtml(item.detail_slug || "")}"
+                placeholder="${paid ? "プロフィールURL用slug" : "プロフィールURL用slug（有料プランのみ）"}"
+                ${paid ? "" : "disabled"}
+              />
 
               <div class="card-actions">
                 <button class="primary-btn save-artist-btn" data-id="${item.id}">保存</button>
@@ -526,15 +560,16 @@ function renderArtists(list) {
     return `
       <article class="card">
         <div class="card-image">
-          ${item.icon_path ? `<img src="${item.icon_path}" alt="${item.name}" loading="lazy">` : ""}
+          ${item.icon_path ? `<img src="${item.icon_path}" alt="${escapeHtml(item.name)}" loading="lazy">` : ""}
           <span class="badge">ARTIST</span>
         </div>
         <div class="card-body">
-          <h3>${item.name}</h3>
+          <h3>${escapeHtml(item.name)}</h3>
           <div class="meta">
-            <span>📝 ${item.description || ""}</span>
-            <span>🔗 ${item.x_url || ""}</span>
-            <span>🆔 ${item.detail_slug || "-"}</span>
+            <span>📝 ${escapeHtml(item.description || "")}</span>
+            <span>🔗 ${escapeHtml(item.x_url || "")}</span>
+            <span>🌐 ${escapeHtml(item.external_url || "")}</span>
+            <span>🆔 ${escapeHtml(item.detail_slug || "-")}</span>
           </div>
           <div class="card-actions">
             <button class="ghost-btn artist-edit-btn" data-id="${item.id}">修正</button>
@@ -564,11 +599,16 @@ function renderArtists(list) {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
 
+      const currentItem = list.find(item => String(item.id) === String(id));
+
       const payload = {
         name: document.getElementById(`editArtistName_${id}`).value.trim(),
         description: document.getElementById(`editArtistDescription_${id}`).value.trim(),
         x_url: document.getElementById(`editArtistXUrl_${id}`).value.trim(),
-        detail_slug: document.getElementById(`editArtistSlug_${id}`).value.trim() || null
+        external_url: document.getElementById(`editArtistExternalUrl_${id}`).value.trim(),
+        detail_slug: paid
+          ? (document.getElementById(`editArtistSlug_${id}`).value.trim() || null)
+          : (currentItem?.detail_slug || null)
       };
 
       const { error } = await supabase
