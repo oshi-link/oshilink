@@ -3,7 +3,11 @@ import { getPlanLimits } from "./plan-utils.js";
 
 const userEmail = document.getElementById("userEmail");
 const userPlan = document.getElementById("userPlan");
+const registeredArtistName = document.getElementById("registeredArtistName");
 const logoutBtn = document.getElementById("logoutBtn");
+
+const artistRequiredNotice = document.getElementById("artistRequiredNotice");
+const eventCard = document.getElementById("eventCard");
 
 const eventForm = document.getElementById("eventForm");
 const eventMessage = document.getElementById("eventMessage");
@@ -17,8 +21,13 @@ const videoForm = document.getElementById("videoForm");
 const videoMessage = document.getElementById("videoMessage");
 const myVideos = document.getElementById("myVideos");
 
+const detailUrlInput = document.getElementById("detailUrl");
+const ticketUrlInput = document.getElementById("ticketUrl");
+const artistDetailSlugInput = document.getElementById("artistDetailSlug");
+
 let currentUser = null;
 let currentProfile = null;
+let primaryArtist = null;
 
 async function requireUser() {
   const { data, error } = await supabase.auth.getUser();
@@ -54,19 +63,18 @@ async function uploadImage(bucketName, file, userId) {
     .from(bucketName)
     .upload(filePath, file);
 
-  if (uploadError) {
-    throw uploadError;
-  }
+  if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage
-    .from(bucketName)
-    .getPublicUrl(filePath);
-
+  const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
   return data.publicUrl;
 }
 
 function getSafePlan(profile) {
   return profile?.plan || "free";
+}
+
+function isPaidPlan(plan) {
+  return plan === "standard" || plan === "premium";
 }
 
 function getMonthRange() {
@@ -78,6 +86,41 @@ function getMonthRange() {
     start: start.toISOString(),
     end: end.toISOString()
   };
+}
+
+function setSelectOptions(select, start, end, suffix = "") {
+  const options = [];
+  for (let i = start; i <= end; i += 1) {
+    const value = String(i).padStart(2, "0");
+    options.push(`<option value="${value}">${value}${suffix}</option>`);
+  }
+  select.innerHTML = options.join("");
+}
+
+function setupTimeSelectors() {
+  setSelectOptions(document.getElementById("openHour"), 0, 23);
+  setSelectOptions(document.getElementById("startHour"), 0, 23);
+
+  const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"]
+    .map(min => `<option value="${min}">${min}分</option>`)
+    .join("");
+
+  document.getElementById("openMinute").innerHTML = minuteOptions;
+  document.getElementById("startMinute").innerHTML = minuteOptions;
+
+  document.getElementById("openHour").value = "18";
+  document.getElementById("openMinute").value = "00";
+  document.getElementById("startHour").value = "18";
+  document.getElementById("startMinute").value = "30";
+}
+
+function buildTimeText() {
+  const openHour = document.getElementById("openHour").value;
+  const openMinute = document.getElementById("openMinute").value;
+  const startHour = document.getElementById("startHour").value;
+  const startMinute = document.getElementById("startMinute").value;
+
+  return `${openHour}:${openMinute} OPEN / ${startHour}:${startMinute} START`;
 }
 
 async function countPublishedEvents(userId) {
@@ -105,16 +148,6 @@ async function countMonthlyEventCreates(userId) {
   return count || 0;
 }
 
-async function countUserArtists(userId) {
-  const { count, error } = await supabase
-    .from("artists")
-    .select("*", { count: "exact", head: true })
-    .eq("owner_user_id", userId);
-
-  if (error) throw error;
-  return count || 0;
-}
-
 async function countUserVideos(userId) {
   const { count, error } = await supabase
     .from("videos")
@@ -123,6 +156,52 @@ async function countUserVideos(userId) {
 
   if (error) throw error;
   return count || 0;
+}
+
+async function loadPrimaryArtist() {
+  const { data, error } = await supabase
+    .from("artists")
+    .select("*")
+    .eq("owner_user_id", currentUser.id)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (error) {
+    console.error("演者取得失敗:", error);
+    return null;
+  }
+
+  return data?.[0] || null;
+}
+
+function applyPlanRestrictions() {
+  const plan = getSafePlan(currentProfile);
+  const paid = isPaidPlan(plan);
+
+  detailUrlInput.disabled = !paid;
+  ticketUrlInput.disabled = !paid;
+  artistDetailSlugInput.disabled = !paid;
+
+  if (!paid) {
+    detailUrlInput.value = "";
+    ticketUrlInput.value = "";
+    artistDetailSlugInput.value = "";
+    detailUrlInput.placeholder = "詳細URL（有料プランのみ）";
+    ticketUrlInput.placeholder = "チケットURL（有料プランのみ）";
+    artistDetailSlugInput.placeholder = "詳細URL用slug（有料プランのみ）";
+  }
+}
+
+function applyArtistGate() {
+  if (primaryArtist) {
+    artistRequiredNotice.style.display = "none";
+    eventCard.style.display = "block";
+    registeredArtistName.textContent = `登録済み演者: ${primaryArtist.name}`;
+  } else {
+    artistRequiredNotice.style.display = "block";
+    eventCard.style.display = "none";
+    registeredArtistName.textContent = "登録済み演者: 未登録";
+  }
 }
 
 function getEventStatusLabel(status) {
@@ -156,6 +235,7 @@ function renderEvents(list) {
         <div class="meta">
           <span>🎤 ${item.artist_name}</span>
           <span>📍 ${item.place}</span>
+          <span>🗾 ${item.area}</span>
           <span>📅 ${item.event_date}</span>
           <span>🕒 ${item.time_text || ""}</span>
         </div>
@@ -165,6 +245,7 @@ function renderEvents(list) {
               ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開にする</button>`
               : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開する</button>`
           }
+          <button class="ghost-btn event-delete-btn" data-id="${item.id}">削除</button>
         </div>
       </div>
     </article>
@@ -226,6 +307,29 @@ function renderEvents(list) {
       }
     });
   });
+
+  document.querySelectorAll(".event-delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const ok = confirm("このイベントを完全に削除しますか？この操作は元に戻せません。");
+      if (!ok) return;
+
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
+      if (error) {
+        alert("削除に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      await loadMyEvents();
+      await refreshPlanSummary();
+    });
+  });
 }
 
 function renderArtists(list) {
@@ -251,30 +355,11 @@ function renderArtists(list) {
         <div class="meta">
           <span>📝 ${item.description || ""}</span>
           <span>🔗 ${item.x_url || ""}</span>
-        </div>
-        <div class="card-actions">
-          <button class="ghost-btn delete-artist-btn" data-id="${item.id}">削除</button>
+          <span>🆔 ${item.detail_slug || "-"}</span>
         </div>
       </div>
     </article>
   `).join("");
-
-  document.querySelectorAll(".delete-artist-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const ok = confirm("この演者を削除しますか？");
-      if (!ok) return;
-
-      const { error } = await supabase.from("artists").delete().eq("id", id);
-      if (error) {
-        alert("削除に失敗しました");
-        console.error(error);
-        return;
-      }
-
-      await loadMyArtists();
-    });
-  });
 }
 
 function renderVideos(list) {
@@ -376,9 +461,7 @@ async function refreshPlanSummary() {
   const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
 
   const publishedText =
-    limits.maxEvents === null
-      ? `${publishedCount}件`
-      : `${publishedCount}/${limits.maxEvents}件`;
+    limits.maxEvents === null ? `${publishedCount}件` : `${publishedCount}/${limits.maxEvents}件`;
 
   const monthlyText =
     limits.maxMonthlyEventCreates === null
@@ -393,6 +476,11 @@ eventForm?.addEventListener("submit", async (e) => {
   eventMessage.textContent = "";
 
   try {
+    if (!primaryArtist) {
+      eventMessage.textContent = "先に演者登録を行ってください。";
+      return;
+    }
+
     const limits = getPlanLimits(getSafePlan(currentProfile));
     const publishedCount = await countPublishedEvents(currentUser.id);
     const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
@@ -410,20 +498,23 @@ eventForm?.addEventListener("submit", async (e) => {
       return;
     }
 
+    const plan = getSafePlan(currentProfile);
+    const paid = isPaidPlan(plan);
+
     const imageFile = document.getElementById("eventImage").files[0];
     const imageUrl = await uploadImage("event-images", imageFile, currentUser.id);
 
     const payload = {
       owner_user_id: currentUser.id,
-      title: document.getElementById("title").value,
-      artist_name: document.getElementById("artist").value,
-      place: document.getElementById("place").value,
+      title: document.getElementById("title").value.trim(),
+      artist_name: primaryArtist.name,
+      place: document.getElementById("place").value.trim(),
       area: document.getElementById("area").value,
       event_date: document.getElementById("date").value,
-      time_text: document.getElementById("time").value,
-      price: document.getElementById("price").value,
-      detail_url: document.getElementById("detailUrl").value,
-      ticket_url: document.getElementById("ticketUrl").value,
+      time_text: buildTimeText(),
+      price: document.getElementById("price").value.trim(),
+      detail_url: paid ? detailUrlInput.value.trim() : "",
+      ticket_url: paid ? ticketUrlInput.value.trim() : "",
       image_path: imageUrl,
       status: "published"
     };
@@ -433,6 +524,9 @@ eventForm?.addEventListener("submit", async (e) => {
 
     eventMessage.textContent = "イベントを投稿しました。";
     eventForm.reset();
+    setupTimeSelectors();
+    applyPlanRestrictions();
+
     await loadMyEvents();
     await refreshPlanSummary();
   } catch (error) {
@@ -446,11 +540,14 @@ artistForm?.addEventListener("submit", async (e) => {
   artistMessage.textContent = "";
 
   try {
-    const limits = getPlanLimits(getSafePlan(currentProfile));
-    const currentCount = await countUserArtists(currentUser.id);
+    const plan = getSafePlan(currentProfile);
+    const paid = isPaidPlan(plan);
 
-    if (limits.maxArtists !== null && currentCount >= limits.maxArtists) {
-      artistMessage.textContent = `このプランでは演者登録は ${limits.maxArtists} 件までです。`;
+    const existingArtist = await loadPrimaryArtist();
+    if (existingArtist) {
+      artistMessage.textContent = "このアカウントでは既に演者登録済みです。";
+      primaryArtist = existingArtist;
+      applyArtistGate();
       return;
     }
 
@@ -459,11 +556,11 @@ artistForm?.addEventListener("submit", async (e) => {
 
     const payload = {
       owner_user_id: currentUser.id,
-      name: document.getElementById("artistName").value,
-      description: document.getElementById("artistDescription").value,
+      name: document.getElementById("artistName").value.trim(),
+      description: document.getElementById("artistDescription").value.trim(),
       icon_path: iconUrl,
-      x_url: document.getElementById("artistXUrl").value,
-      detail_slug: document.getElementById("artistDetailSlug").value || null,
+      x_url: document.getElementById("artistXUrl").value.trim(),
+      detail_slug: paid ? (artistDetailSlugInput.value.trim() || null) : null,
       is_public: true
     };
 
@@ -472,6 +569,11 @@ artistForm?.addEventListener("submit", async (e) => {
 
     artistMessage.textContent = "演者を登録しました。";
     artistForm.reset();
+    applyPlanRestrictions();
+
+    primaryArtist = await loadPrimaryArtist();
+    applyArtistGate();
+
     await loadMyArtists();
   } catch (error) {
     console.error(error);
@@ -520,13 +622,18 @@ logoutBtn?.addEventListener("click", async () => {
 });
 
 async function init() {
+  setupTimeSelectors();
+
   currentUser = await requireUser();
   if (!currentUser) return;
 
   currentProfile = await loadProfile(currentUser.id);
+  primaryArtist = await loadPrimaryArtist();
 
   userEmail.textContent = `ログイン中: ${currentUser.email}`;
   await refreshPlanSummary();
+  applyPlanRestrictions();
+  applyArtistGate();
 
   await loadMyEvents();
   await loadMyArtists();
