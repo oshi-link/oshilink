@@ -300,48 +300,118 @@ function renderEvents(list) {
     return;
   }
 
-  myEvents.innerHTML = list.map(item => `
-    <article class="card">
-      <div class="card-image">
-        ${item.image_path ? `<img src="${item.image_path}" alt="${item.title}" loading="lazy">` : ""}
-        <span class="badge ${item.status === "private" ? "ended" : ""}">
-          ${getEventStatusLabel(item.status)}
-        </span>
-      </div>
-      <div class="card-body">
-        <h3>${item.title}</h3>
-        <div class="meta">
-          <span>🎤 ${item.artist_name}</span>
-          <span>📍 ${item.place}</span>
-          <span>🗾 ${item.area}</span>
-          <span>📅 ${item.event_date}</span>
-          <span>🕒 ${item.time_text || ""}</span>
+  myEvents.innerHTML = list.map(item => {
+    const isEditing = editingEventId === item.id;
+
+    if (isEditing) {
+      return `
+        <article class="card">
+          <div class="card-body">
+            <h3>イベント修正</h3>
+            <div style="display: grid; gap: 12px;">
+              <input type="text" id="editEventTitle_${item.id}" value="${item.title || ""}" placeholder="タイトル" />
+              
+              <select id="editEventArea_${item.id}">
+                <option value="">地域を選択してください</option>
+                ${[
+                  "北海道","青森","岩手","宮城","秋田","山形","福島","茨城","栃木","群馬","埼玉","千葉","東京","神奈川",
+                  "新潟","富山","石川","福井","山梨","長野","岐阜","静岡","愛知","三重","滋賀","京都","大阪","兵庫","奈良",
+                  "和歌山","鳥取","島根","岡山","広島","山口","徳島","香川","愛媛","高知","福岡","佐賀","長崎","熊本","大分",
+                  "宮崎","鹿児島","沖縄"
+                ].map(area => `<option value="${area}" ${item.area === area ? "selected" : ""}>${area}</option>`).join("")}
+              </select>
+
+              <input type="text" id="editEventPlace_${item.id}" value="${item.place || ""}" placeholder="場所" />
+              <input type="date" id="editEventDate_${item.id}" value="${item.event_date || ""}" />
+              <input type="text" id="editEventTime_${item.id}" value="${item.time_text || ""}" placeholder="18:00 OPEN / 18:30 START" />
+              <input type="text" id="editEventPrice_${item.id}" value="${item.price || ""}" placeholder="料金" />
+              <input type="text" id="editEventDetailUrl_${item.id}" value="${item.detail_url || ""}" placeholder="詳細URL" />
+              <input type="text" id="editEventTicketUrl_${item.id}" value="${item.ticket_url || ""}" placeholder="チケットURL" />
+
+              <div class="card-actions">
+                <button class="primary-btn save-event-btn" data-id="${item.id}">保存</button>
+                <button class="ghost-btn cancel-event-edit-btn" data-id="${item.id}">キャンセル</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    return `
+      <article class="card">
+        <div class="card-image">
+          ${item.image_path ? `<img src="${item.image_path}" alt="${item.title}" loading="lazy">` : ""}
+          <span class="badge ${item.status === "private" ? "ended" : ""}">
+            ${getEventStatusLabel(item.status)}
+          </span>
         </div>
-        <div class="card-actions">
-          <button class="ghost-btn event-edit-btn" data-id="${item.id}">修正</button>
-          ${
-            item.status === "published"
-              ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開</button>`
-              : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開</button>`
-          }
-          <button class="ghost-btn event-delete-btn" data-id="${item.id}">削除</button>
+        <div class="card-body">
+          <h3>${item.title}</h3>
+          <div class="meta">
+            <span>🎤 ${item.artist_name}</span>
+            <span>📍 ${item.place}</span>
+            <span>🗾 ${item.area}</span>
+            <span>📅 ${item.event_date}</span>
+            <span>🕒 ${item.time_text || ""}</span>
+          </div>
+          <div class="card-actions">
+            <button class="ghost-btn event-edit-btn" data-id="${item.id}">修正</button>
+            ${
+              item.status === "published"
+                ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開</button>`
+                : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開</button>`
+            }
+            <button class="ghost-btn event-delete-btn" data-id="${item.id}">削除</button>
+          </div>
         </div>
-      </div>
-    </article>
-  `).join("");
+      </article>
+    `;
+  }).join("");
 
   document.querySelectorAll(".event-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingEventId = btn.dataset.id;
+      loadMyEvents();
+    });
+  });
+
+  document.querySelectorAll(".cancel-event-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingEventId = null;
+      loadMyEvents();
+    });
+  });
+
+  document.querySelectorAll(".save-event-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .eq("id", id)
-        .eq("owner_user_id", currentUser.id)
-        .single();
 
-      if (error || !data) return;
-      startEditEvent(data);
+      const payload = {
+        title: document.getElementById(`editEventTitle_${id}`).value.trim(),
+        area: document.getElementById(`editEventArea_${id}`).value,
+        place: document.getElementById(`editEventPlace_${id}`).value.trim(),
+        event_date: document.getElementById(`editEventDate_${id}`).value,
+        time_text: document.getElementById(`editEventTime_${id}`).value.trim(),
+        price: document.getElementById(`editEventPrice_${id}`).value.trim(),
+        detail_url: document.getElementById(`editEventDetailUrl_${id}`).value.trim(),
+        ticket_url: document.getElementById(`editEventTicketUrl_${id}`).value.trim()
+      };
+
+      const { error } = await supabase
+        .from("events")
+        .update(payload)
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
+      if (error) {
+        alert("イベント更新に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      editingEventId = null;
+      await loadMyEvents();
     });
   });
 
@@ -372,33 +442,20 @@ function renderEvents(list) {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
 
-      try {
-        const limits = getPlanLimits(getSafePlan(currentProfile));
-        const publishedCount = await countPublishedEvents(currentUser.id);
+      const { error } = await supabase
+        .from("events")
+        .update({ status: "published" })
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
 
-        if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
-          alert(`このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`);
-          return;
-        }
-
-        const { error } = await supabase
-          .from("events")
-          .update({ status: "published" })
-          .eq("id", id)
-          .eq("owner_user_id", currentUser.id);
-
-        if (error) {
-          alert("再公開に失敗しました");
-          console.error(error);
-          return;
-        }
-
-        await loadMyEvents();
-        await refreshPlanSummary();
-      } catch (error) {
-        console.error(error);
+      if (error) {
         alert("再公開に失敗しました");
+        console.error(error);
+        return;
       }
+
+      await loadMyEvents();
+      await refreshPlanSummary();
     });
   });
 
@@ -423,7 +480,7 @@ function renderEvents(list) {
         return;
       }
 
-      if (editingEventId === id) resetEventForm();
+      editingEventId = null;
       await loadMyEvents();
       await refreshPlanSummary();
     });
@@ -442,40 +499,94 @@ function renderArtists(list) {
     return;
   }
 
-  myArtists.innerHTML = list.map(item => `
-    <article class="card">
-      <div class="card-image">
-        ${item.icon_path ? `<img src="${item.icon_path}" alt="${item.name}" loading="lazy">` : ""}
-        <span class="badge">ARTIST</span>
-      </div>
-      <div class="card-body">
-        <h3>${item.name}</h3>
-        <div class="meta">
-          <span>📝 ${item.description || ""}</span>
-          <span>🔗 ${item.x_url || ""}</span>
-          <span>🆔 ${item.detail_slug || "-"}</span>
+  myArtists.innerHTML = list.map(item => {
+    const isEditing = editingArtistId === item.id;
+
+    if (isEditing) {
+      return `
+        <article class="card">
+          <div class="card-body">
+            <h3>演者情報修正</h3>
+            <div style="display: grid; gap: 12px;">
+              <input type="text" id="editArtistName_${item.id}" value="${item.name || ""}" placeholder="演者名" />
+              <input type="text" id="editArtistDescription_${item.id}" value="${item.description || ""}" placeholder="説明" />
+              <input type="text" id="editArtistXUrl_${item.id}" value="${item.x_url || ""}" placeholder="XのURL" />
+              <input type="text" id="editArtistSlug_${item.id}" value="${item.detail_slug || ""}" placeholder="詳細URL用slug" />
+
+              <div class="card-actions">
+                <button class="primary-btn save-artist-btn" data-id="${item.id}">保存</button>
+                <button class="ghost-btn cancel-artist-edit-btn" data-id="${item.id}">キャンセル</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    return `
+      <article class="card">
+        <div class="card-image">
+          ${item.icon_path ? `<img src="${item.icon_path}" alt="${item.name}" loading="lazy">` : ""}
+          <span class="badge">ARTIST</span>
         </div>
-        <div class="card-actions">
-          <button class="ghost-btn artist-edit-btn" data-id="${item.id}">修正</button>
-          ${item.detail_slug ? `<a href="artist.html?slug=${item.detail_slug}" class="mini-btn" target="_blank" rel="noopener noreferrer">プロフィール</a>` : ""}
-          <button class="ghost-btn artist-delete-btn" data-id="${item.id}">削除</button>
+        <div class="card-body">
+          <h3>${item.name}</h3>
+          <div class="meta">
+            <span>📝 ${item.description || ""}</span>
+            <span>🔗 ${item.x_url || ""}</span>
+            <span>🆔 ${item.detail_slug || "-"}</span>
+          </div>
+          <div class="card-actions">
+            <button class="ghost-btn artist-edit-btn" data-id="${item.id}">修正</button>
+            ${item.detail_slug ? `<a href="artist.html?slug=${item.detail_slug}" class="mini-btn" target="_blank" rel="noopener noreferrer">プロフィール</a>` : ""}
+            <button class="ghost-btn artist-delete-btn" data-id="${item.id}">削除</button>
+          </div>
         </div>
-      </div>
-    </article>
-  `).join("");
+      </article>
+    `;
+  }).join("");
 
   document.querySelectorAll(".artist-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingArtistId = btn.dataset.id;
+      loadMyArtists();
+    });
+  });
+
+  document.querySelectorAll(".cancel-artist-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingArtistId = null;
+      loadMyArtists();
+    });
+  });
+
+  document.querySelectorAll(".save-artist-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const { data, error } = await supabase
-        .from("artists")
-        .select("*")
-        .eq("id", id)
-        .eq("owner_user_id", currentUser.id)
-        .single();
 
-      if (error || !data) return;
-      startEditArtist(data);
+      const payload = {
+        name: document.getElementById(`editArtistName_${id}`).value.trim(),
+        description: document.getElementById(`editArtistDescription_${id}`).value.trim(),
+        x_url: document.getElementById(`editArtistXUrl_${id}`).value.trim(),
+        detail_slug: document.getElementById(`editArtistSlug_${id}`).value.trim() || null
+      };
+
+      const { error } = await supabase
+        .from("artists")
+        .update(payload)
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
+      if (error) {
+        alert("演者更新に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      editingArtistId = null;
+      primaryArtist = await loadPrimaryArtist();
+      applyArtistGate();
+      await loadMyArtists();
     });
   });
 
@@ -500,8 +611,7 @@ function renderArtists(list) {
         return;
       }
 
-      if (editingArtistId === id) resetArtistForm();
-
+      editingArtistId = null;
       primaryArtist = await loadPrimaryArtist();
       applyArtistGate();
       await loadMyArtists();
@@ -521,36 +631,88 @@ function renderVideos(list) {
     return;
   }
 
-  myVideos.innerHTML = list.map(item => `
-    <article class="card">
-      <div class="card-body">
-        <h3>${item.title}</h3>
-        <div class="meta">
-          <span>👤 ${item.artist_name}</span>
-          <span>▶ ${item.description || ""}</span>
-          <span>🏷 ${item.type || ""}</span>
+  myVideos.innerHTML = list.map(item => {
+    const isEditing = editingVideoId === item.id;
+
+    if (isEditing) {
+      return `
+        <article class="card">
+          <div class="card-body">
+            <h3>動画修正</h3>
+            <div style="display: grid; gap: 12px;">
+              <input type="text" id="editVideoTitle_${item.id}" value="${item.title || ""}" placeholder="動画タイトル" />
+              <input type="text" id="editVideoType_${item.id}" value="${item.type || ""}" placeholder="種別" />
+              <input type="text" id="editVideoDescription_${item.id}" value="${item.description || ""}" placeholder="説明" />
+              <input type="text" id="editVideoUrl_${item.id}" value="${item.url || ""}" placeholder="動画URL" />
+
+              <div class="card-actions">
+                <button class="primary-btn save-video-btn" data-id="${item.id}">保存</button>
+                <button class="ghost-btn cancel-video-edit-btn" data-id="${item.id}">キャンセル</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    return `
+      <article class="card">
+        <div class="card-body">
+          <h3>${item.title}</h3>
+          <div class="meta">
+            <span>👤 ${item.artist_name}</span>
+            <span>▶ ${item.description || ""}</span>
+            <span>🏷 ${item.type || ""}</span>
+          </div>
+          <div class="card-actions">
+            <button class="ghost-btn video-edit-btn" data-id="${item.id}">修正</button>
+            ${item.url ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>` : ""}
+            <button class="ghost-btn video-delete-btn" data-id="${item.id}">削除</button>
+          </div>
         </div>
-        <div class="card-actions">
-          <button class="ghost-btn video-edit-btn" data-id="${item.id}">修正</button>
-          ${item.url ? `<a href="${item.url}" class="mini-btn" target="_blank" rel="noopener noreferrer">視聴する</a>` : ""}
-          <button class="ghost-btn video-delete-btn" data-id="${item.id}">削除</button>
-        </div>
-      </div>
-    </article>
-  `).join("");
+      </article>
+    `;
+  }).join("");
 
   document.querySelectorAll(".video-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingVideoId = btn.dataset.id;
+      loadMyVideos();
+    });
+  });
+
+  document.querySelectorAll(".cancel-video-edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editingVideoId = null;
+      loadMyVideos();
+    });
+  });
+
+  document.querySelectorAll(".save-video-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const { data, error } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("id", id)
-        .eq("owner_user_id", currentUser.id)
-        .single();
 
-      if (error || !data) return;
-      startEditVideo(data);
+      const payload = {
+        title: document.getElementById(`editVideoTitle_${id}`).value.trim(),
+        type: document.getElementById(`editVideoType_${id}`).value.trim(),
+        description: document.getElementById(`editVideoDescription_${id}`).value.trim(),
+        url: document.getElementById(`editVideoUrl_${id}`).value.trim()
+      };
+
+      const { error } = await supabase
+        .from("videos")
+        .update(payload)
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
+      if (error) {
+        alert("動画更新に失敗しました");
+        console.error(error);
+        return;
+      }
+
+      editingVideoId = null;
+      await loadMyVideos();
     });
   });
 
@@ -575,7 +737,7 @@ function renderVideos(list) {
         return;
       }
 
-      if (editingVideoId === id) resetVideoForm();
+      editingVideoId = null;
       await loadMyVideos();
     });
   });
