@@ -40,6 +40,7 @@ async function loadArtist() {
     .from("artists")
     .select("*")
     .eq("detail_slug", slug)
+    .is("deleted_at", null)
     .single();
 
   if (error || !data) {
@@ -65,6 +66,7 @@ async function loadArtistVideos(name) {
     .select("*")
     .eq("artist_name", name)
     .eq("is_public", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -104,6 +106,7 @@ async function loadArtistEvents(name) {
     .select("*")
     .eq("artist_name", name)
     .eq("status", "published")
+    .is("deleted_at", null)
     .order("event_date", { ascending: true });
 
   if (error) {
@@ -127,6 +130,7 @@ async function loadArtistEvents(name) {
         <h3>${item.title}</h3>
         <div class="meta">
           <span>📍 ${item.place}</span>
+          <span>🗾 ${item.area}</span>
           <span>📅 ${item.event_date}</span>
           <span>🕒 ${item.time_text || ""}</span>
         </div>
