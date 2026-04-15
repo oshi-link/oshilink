@@ -69,11 +69,37 @@ function getSafePlan(profile) {
   return profile?.plan || "free";
 }
 
-async function countUserEvents(userId) {
+function getMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString()
+  };
+}
+
+async function countPublishedEvents(userId) {
   const { count, error } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
-    .eq("owner_user_id", userId);
+    .eq("owner_user_id", userId)
+    .eq("status", "published");
+
+  if (error) throw error;
+  return count || 0;
+}
+
+async function countMonthlyEventCreates(userId) {
+  const { start, end } = getMonthRange();
+
+  const { count, error } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("owner_user_id", userId)
+    .gte("created_at", start)
+    .lt("created_at", end);
 
   if (error) throw error;
   return count || 0;
@@ -99,6 +125,12 @@ async function countUserVideos(userId) {
   return count || 0;
 }
 
+function getEventStatusLabel(status) {
+  if (status === "private") return "非公開";
+  if (status === "ended") return "終了";
+  return "公開中";
+}
+
 function renderEvents(list) {
   if (!myEvents) return;
 
@@ -115,7 +147,9 @@ function renderEvents(list) {
     <article class="card">
       <div class="card-image">
         ${item.image_path ? `<img src="${item.image_path}" alt="${item.title}" loading="lazy">` : ""}
-        <span class="badge">${item.status || "published"}</span>
+        <span class="badge ${item.status === "private" ? "ended" : ""}">
+          ${getEventStatusLabel(item.status)}
+        </span>
       </div>
       <div class="card-body">
         <h3>${item.title}</h3>
@@ -126,26 +160,70 @@ function renderEvents(list) {
           <span>🕒 ${item.time_text || ""}</span>
         </div>
         <div class="card-actions">
-          <button class="ghost-btn delete-event-btn" data-id="${item.id}">削除</button>
+          ${
+            item.status === "published"
+              ? `<button class="ghost-btn event-private-btn" data-id="${item.id}">非公開にする</button>`
+              : `<button class="primary-btn event-restore-btn" data-id="${item.id}">再公開する</button>`
+          }
         </div>
       </div>
     </article>
   `).join("");
 
-  document.querySelectorAll(".delete-event-btn").forEach(btn => {
+  document.querySelectorAll(".event-private-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const ok = confirm("このイベントを削除しますか？");
+      const ok = confirm("このイベントを非公開にしますか？");
       if (!ok) return;
 
-      const { error } = await supabase.from("events").delete().eq("id", id);
+      const { error } = await supabase
+        .from("events")
+        .update({ status: "private" })
+        .eq("id", id)
+        .eq("owner_user_id", currentUser.id);
+
       if (error) {
-        alert("削除に失敗しました");
+        alert("非公開への変更に失敗しました");
         console.error(error);
         return;
       }
 
       await loadMyEvents();
+      await refreshPlanSummary();
+    });
+  });
+
+  document.querySelectorAll(".event-restore-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+
+      try {
+        const limits = getPlanLimits(getSafePlan(currentProfile));
+        const publishedCount = await countPublishedEvents(currentUser.id);
+
+        if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
+          alert(`このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`);
+          return;
+        }
+
+        const { error } = await supabase
+          .from("events")
+          .update({ status: "published" })
+          .eq("id", id)
+          .eq("owner_user_id", currentUser.id);
+
+        if (error) {
+          alert("再公開に失敗しました");
+          console.error(error);
+          return;
+        }
+
+        await loadMyEvents();
+        await refreshPlanSummary();
+      } catch (error) {
+        console.error(error);
+        alert("再公開に失敗しました");
+      }
     });
   });
 }
@@ -291,16 +369,44 @@ async function loadMyVideos() {
   renderVideos(data || []);
 }
 
+async function refreshPlanSummary() {
+  const plan = getSafePlan(currentProfile);
+  const limits = getPlanLimits(plan);
+  const publishedCount = await countPublishedEvents(currentUser.id);
+  const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
+
+  const publishedText =
+    limits.maxEvents === null
+      ? `${publishedCount}件`
+      : `${publishedCount}/${limits.maxEvents}件`;
+
+  const monthlyText =
+    limits.maxMonthlyEventCreates === null
+      ? `${monthlyCreateCount}件`
+      : `${monthlyCreateCount}/${limits.maxMonthlyEventCreates}件`;
+
+  userPlan.textContent = `現在のプラン: ${plan.toUpperCase()} ｜ 公開中イベント: ${publishedText} ｜ 今月の新規作成: ${monthlyText}`;
+}
+
 eventForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   eventMessage.textContent = "";
 
   try {
     const limits = getPlanLimits(getSafePlan(currentProfile));
-    const currentCount = await countUserEvents(currentUser.id);
+    const publishedCount = await countPublishedEvents(currentUser.id);
+    const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
 
-    if (limits.maxEvents !== null && currentCount >= limits.maxEvents) {
-      eventMessage.textContent = `このプランではイベントは ${limits.maxEvents} 件までです。`;
+    if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
+      eventMessage.textContent = `このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`;
+      return;
+    }
+
+    if (
+      limits.maxMonthlyEventCreates !== null &&
+      monthlyCreateCount >= limits.maxMonthlyEventCreates
+    ) {
+      eventMessage.textContent = `このプランでは今月の新規イベント作成は ${limits.maxMonthlyEventCreates} 件までです。`;
       return;
     }
 
@@ -328,6 +434,7 @@ eventForm?.addEventListener("submit", async (e) => {
     eventMessage.textContent = "イベントを投稿しました。";
     eventForm.reset();
     await loadMyEvents();
+    await refreshPlanSummary();
   } catch (error) {
     console.error(error);
     eventMessage.textContent = "イベント投稿に失敗しました。";
@@ -419,7 +526,7 @@ async function init() {
   currentProfile = await loadProfile(currentUser.id);
 
   userEmail.textContent = `ログイン中: ${currentUser.email}`;
-  userPlan.textContent = `現在のプラン: ${getSafePlan(currentProfile).toUpperCase()}`;
+  await refreshPlanSummary();
 
   await loadMyEvents();
   await loadMyArtists();
