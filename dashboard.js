@@ -25,6 +25,7 @@ const myVideos = document.getElementById("myVideos");
 const detailUrlInput = document.getElementById("detailUrl");
 const ticketUrlInput = document.getElementById("ticketUrl");
 const artistDetailSlugInput = document.getElementById("artistDetailSlug");
+const artistExternalUrlInput = document.getElementById("artistExternalUrl");
 
 let currentUser = null;
 let currentProfile = null;
@@ -103,42 +104,36 @@ function setSelectOptions(select, start, end, suffix = "") {
 }
 
 function setupTimeSelectors() {
-  setSelectOptions(document.getElementById("openHour"), 0, 23);
-  setSelectOptions(document.getElementById("startHour"), 0, 23);
+  const openHour = document.getElementById("openHour");
+  const startHour = document.getElementById("startHour");
+  const openMinute = document.getElementById("openMinute");
+  const startMinute = document.getElementById("startMinute");
+
+  if (!openHour || !startHour || !openMinute || !startMinute) return;
+
+  setSelectOptions(openHour, 0, 23);
+  setSelectOptions(startHour, 0, 23);
 
   const minuteOptions = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"]
     .map(min => `<option value="${min}">${min}分</option>`)
     .join("");
 
-  document.getElementById("openMinute").innerHTML = minuteOptions;
-  document.getElementById("startMinute").innerHTML = minuteOptions;
+  openMinute.innerHTML = minuteOptions;
+  startMinute.innerHTML = minuteOptions;
 
-  document.getElementById("openHour").value = "18";
-  document.getElementById("openMinute").value = "00";
-  document.getElementById("startHour").value = "18";
-  document.getElementById("startMinute").value = "30";
+  openHour.value = "18";
+  openMinute.value = "00";
+  startHour.value = "18";
+  startMinute.value = "30";
 }
 
 function buildTimeText() {
-  const openHour = document.getElementById("openHour").value;
-  const openMinute = document.getElementById("openMinute").value;
-  const startHour = document.getElementById("startHour").value;
-  const startMinute = document.getElementById("startMinute").value;
+  const openHour = document.getElementById("openHour")?.value || "18";
+  const openMinute = document.getElementById("openMinute")?.value || "00";
+  const startHour = document.getElementById("startHour")?.value || "18";
+  const startMinute = document.getElementById("startMinute")?.value || "30";
 
   return `${openHour}:${openMinute} OPEN / ${startHour}:${startMinute} START`;
-}
-
-function fillTimeSelectorsFromText(timeText = "") {
-  const match = timeText.match(/(\d{1,2}):(\d{2})\s*OPEN\s*\/\s*(\d{1,2}):(\d{2})\s*START/i);
-  if (!match) {
-    setupTimeSelectors();
-    return;
-  }
-
-  document.getElementById("openHour").value = String(match[1]).padStart(2, "0");
-  document.getElementById("openMinute").value = String(match[2]).padStart(2, "0");
-  document.getElementById("startHour").value = String(match[3]).padStart(2, "0");
-  document.getElementById("startMinute").value = String(match[4]).padStart(2, "0");
 }
 
 async function countPublishedEvents(userId) {
@@ -199,31 +194,46 @@ function applyPlanRestrictions() {
   const plan = getSafePlan(currentProfile);
   const paid = isPaidPlan(plan);
 
-  detailUrlInput.disabled = !paid;
-  ticketUrlInput.disabled = !paid;
-  artistDetailSlugInput.disabled = !paid;
+  if (detailUrlInput) {
+    detailUrlInput.disabled = !paid;
+    if (!paid) {
+      detailUrlInput.value = "";
+      detailUrlInput.placeholder = "詳細URL（有料プランのみ）";
+    }
+  }
 
-  if (!paid) {
-    detailUrlInput.value = "";
-    ticketUrlInput.value = "";
-    artistDetailSlugInput.value = "";
-    detailUrlInput.placeholder = "詳細URL（有料プランのみ）";
-    ticketUrlInput.placeholder = "チケットURL（有料プランのみ）";
-    artistDetailSlugInput.placeholder = "詳細URL用slug（有料プランのみ）";
+  if (ticketUrlInput) {
+    ticketUrlInput.disabled = !paid;
+    if (!paid) {
+      ticketUrlInput.value = "";
+      ticketUrlInput.placeholder = "チケットURL（有料プランのみ）";
+    }
+  }
+
+  if (artistDetailSlugInput) {
+    artistDetailSlugInput.disabled = !paid;
+    if (!paid) {
+      artistDetailSlugInput.value = "";
+      artistDetailSlugInput.placeholder = "プロフィールURL用slug（有料プランのみ）";
+    }
   }
 }
 
 function applyArtistGate() {
   if (primaryArtist) {
-    artistRequiredNotice.style.display = "none";
-    eventCard.style.display = "block";
-    videoCard.style.display = "block";
-    registeredArtistName.textContent = `登録済み演者: ${primaryArtist.name}`;
+    if (artistRequiredNotice) artistRequiredNotice.style.display = "none";
+    if (eventCard) eventCard.style.display = "block";
+    if (videoCard) videoCard.style.display = "block";
+    if (registeredArtistName) {
+      registeredArtistName.textContent = `登録済み演者: ${primaryArtist.name}`;
+    }
   } else {
-    artistRequiredNotice.style.display = "block";
-    eventCard.style.display = "none";
-    videoCard.style.display = "none";
-    registeredArtistName.textContent = "登録済み演者: 未登録";
+    if (artistRequiredNotice) artistRequiredNotice.style.display = "block";
+    if (eventCard) eventCard.style.display = "none";
+    if (videoCard) videoCard.style.display = "none";
+    if (registeredArtistName) {
+      registeredArtistName.textContent = "登録済み演者: 未登録";
+    }
   }
 }
 
@@ -233,59 +243,13 @@ function getEventStatusLabel(status) {
   return "公開中";
 }
 
-function resetEventForm() {
-  editingEventId = null;
-  eventForm.reset();
-  setupTimeSelectors();
-  applyPlanRestrictions();
-  eventForm.querySelector('button[type="submit"]').textContent = "イベントを投稿する";
-}
-
-function resetArtistForm() {
-  editingArtistId = null;
-  artistForm.reset();
-  applyPlanRestrictions();
-  artistForm.querySelector('button[type="submit"]').textContent = "演者を登録する";
-}
-
-function resetVideoForm() {
-  editingVideoId = null;
-  videoForm.reset();
-  videoForm.querySelector('button[type="submit"]').textContent = "動画を投稿する";
-}
-
-function startEditEvent(item) {
-  editingEventId = item.id;
-  document.getElementById("title").value = item.title || "";
-  document.getElementById("area").value = item.area || "";
-  document.getElementById("place").value = item.place || "";
-  document.getElementById("date").value = item.event_date || "";
-  document.getElementById("price").value = item.price || "";
-  detailUrlInput.value = item.detail_url || "";
-  ticketUrlInput.value = item.ticket_url || "";
-  fillTimeSelectorsFromText(item.time_text || "");
-  eventForm.querySelector('button[type="submit"]').textContent = "イベントを更新する";
-  eventForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function startEditArtist(item) {
-  editingArtistId = item.id;
-  document.getElementById("artistName").value = item.name || "";
-  document.getElementById("artistDescription").value = item.description || "";
-  document.getElementById("artistXUrl").value = item.x_url || "";
-  artistDetailSlugInput.value = item.detail_slug || "";
-  artistForm.querySelector('button[type="submit"]').textContent = "演者情報を更新する";
-  artistForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function startEditVideo(item) {
-  editingVideoId = item.id;
-  document.getElementById("videoTitle").value = item.title || "";
-  document.getElementById("videoType").value = item.type || "";
-  document.getElementById("videoDescription").value = item.description || "";
-  document.getElementById("videoUrl").value = item.url || "";
-  videoForm.querySelector('button[type="submit"]').textContent = "動画を更新する";
-  videoForm.scrollIntoView({ behavior: "smooth", block: "start" });
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function renderEvents(list) {
@@ -303,7 +267,7 @@ function renderEvents(list) {
   const paid = isPaidPlan(getSafePlan(currentProfile));
 
   myEvents.innerHTML = list.map(item => {
-    const isEditing = editingEventId === item.id;
+    const isEditing = String(editingEventId) === String(item.id);
 
     if (isEditing) {
       return `
@@ -386,22 +350,23 @@ function renderEvents(list) {
   }).join("");
 
   document.querySelectorAll(".event-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingEventId = btn.dataset.id;
-      loadMyEvents();
+      await loadMyEvents();
     });
   });
 
   document.querySelectorAll(".cancel-event-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingEventId = null;
-      loadMyEvents();
+      await loadMyEvents();
     });
   });
 
   document.querySelectorAll(".save-event-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
+      const currentItem = list.find(v => String(v.id) === String(id));
 
       const payload = {
         title: document.getElementById(`editEventTitle_${id}`).value.trim(),
@@ -410,8 +375,12 @@ function renderEvents(list) {
         event_date: document.getElementById(`editEventDate_${id}`).value,
         time_text: document.getElementById(`editEventTime_${id}`).value.trim(),
         price: document.getElementById(`editEventPrice_${id}`).value.trim(),
-        detail_url: paid ? document.getElementById(`editEventDetailUrl_${id}`).value.trim() : (item.detail_url || ""),
-        ticket_url: paid ? document.getElementById(`editEventTicketUrl_${id}`).value.trim() : (item.ticket_url || "")
+        detail_url: paid
+          ? document.getElementById(`editEventDetailUrl_${id}`).value.trim()
+          : (currentItem?.detail_url || ""),
+        ticket_url: paid
+          ? document.getElementById(`editEventTicketUrl_${id}`).value.trim()
+          : (currentItem?.ticket_url || "")
       };
 
       const { error } = await supabase
@@ -526,7 +495,7 @@ function renderArtists(list) {
   const paid = isPaidPlan(getSafePlan(currentProfile));
 
   myArtists.innerHTML = list.map(item => {
-    const isEditing = editingArtistId === item.id;
+    const isEditing = String(editingArtistId) === String(item.id);
 
     if (isEditing) {
       return `
@@ -582,24 +551,23 @@ function renderArtists(list) {
   }).join("");
 
   document.querySelectorAll(".artist-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingArtistId = btn.dataset.id;
-      loadMyArtists();
+      await loadMyArtists();
     });
   });
 
   document.querySelectorAll(".cancel-artist-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingArtistId = null;
-      loadMyArtists();
+      await loadMyArtists();
     });
   });
 
   document.querySelectorAll(".save-artist-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-
-      const currentItem = list.find(item => String(item.id) === String(id));
+      const currentItem = list.find(v => String(v.id) === String(id));
 
       const payload = {
         name: document.getElementById(`editArtistName_${id}`).value.trim(),
@@ -672,7 +640,7 @@ function renderVideos(list) {
   }
 
   myVideos.innerHTML = list.map(item => {
-    const isEditing = editingVideoId === item.id;
+    const isEditing = String(editingVideoId) === String(item.id);
 
     if (isEditing) {
       return `
@@ -680,10 +648,10 @@ function renderVideos(list) {
           <div class="card-body">
             <h3>動画修正</h3>
             <div style="display: grid; gap: 12px;">
-              <input type="text" id="editVideoTitle_${item.id}" value="${item.title || ""}" placeholder="動画タイトル" />
-              <input type="text" id="editVideoType_${item.id}" value="${item.type || ""}" placeholder="種別" />
-              <input type="text" id="editVideoDescription_${item.id}" value="${item.description || ""}" placeholder="説明" />
-              <input type="text" id="editVideoUrl_${item.id}" value="${item.url || ""}" placeholder="動画URL" />
+              <input type="text" id="editVideoTitle_${item.id}" value="${escapeHtml(item.title || "")}" placeholder="動画タイトル" />
+              <input type="text" id="editVideoType_${item.id}" value="${escapeHtml(item.type || "")}" placeholder="種別" />
+              <input type="text" id="editVideoDescription_${item.id}" value="${escapeHtml(item.description || "")}" placeholder="説明" />
+              <input type="text" id="editVideoUrl_${item.id}" value="${escapeHtml(item.url || "")}" placeholder="動画URL" />
 
               <div class="card-actions">
                 <button class="primary-btn save-video-btn" data-id="${item.id}">保存</button>
@@ -698,11 +666,11 @@ function renderVideos(list) {
     return `
       <article class="card">
         <div class="card-body">
-          <h3>${item.title}</h3>
+          <h3>${escapeHtml(item.title)}</h3>
           <div class="meta">
-            <span>👤 ${item.artist_name}</span>
-            <span>▶ ${item.description || ""}</span>
-            <span>🏷 ${item.type || ""}</span>
+            <span>👤 ${escapeHtml(item.artist_name || "")}</span>
+            <span>▶ ${escapeHtml(item.description || "")}</span>
+            <span>🏷 ${escapeHtml(item.type || "")}</span>
           </div>
           <div class="card-actions">
             <button class="ghost-btn video-edit-btn" data-id="${item.id}">修正</button>
@@ -715,16 +683,16 @@ function renderVideos(list) {
   }).join("");
 
   document.querySelectorAll(".video-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingVideoId = btn.dataset.id;
-      loadMyVideos();
+      await loadMyVideos();
     });
   });
 
   document.querySelectorAll(".cancel-video-edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       editingVideoId = null;
-      loadMyVideos();
+      await loadMyVideos();
     });
   });
 
@@ -793,6 +761,7 @@ async function loadMyEvents() {
 
   if (error) {
     console.error("イベント取得失敗:", error);
+    myEvents.innerHTML = `<div class="events-empty"><p>イベントの読み込みに失敗しました。</p></div>`;
     return;
   }
 
@@ -809,6 +778,7 @@ async function loadMyArtists() {
 
   if (error) {
     console.error("演者取得失敗:", error);
+    myArtists.innerHTML = `<div class="events-empty"><p>演者の読み込みに失敗しました。</p></div>`;
     return;
   }
 
@@ -825,6 +795,7 @@ async function loadMyVideos() {
 
   if (error) {
     console.error("動画取得失敗:", error);
+    myVideos.innerHTML = `<div class="events-empty"><p>動画の読み込みに失敗しました。</p></div>`;
     return;
   }
 
@@ -848,6 +819,55 @@ async function refreshPlanSummary() {
   userPlan.textContent = `現在のプラン: ${plan.toUpperCase()} ｜ 公開中イベント: ${publishedText} ｜ 今月の新規作成: ${monthlyText}`;
 }
 
+artistForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  artistMessage.textContent = "";
+
+  try {
+    const plan = getSafePlan(currentProfile);
+    const paid = isPaidPlan(plan);
+
+    let iconUrl = "";
+
+    const iconFile = document.getElementById("artistIcon")?.files?.[0];
+    if (iconFile) {
+      iconUrl = await uploadImage("artist-icons", iconFile, currentUser.id);
+    }
+
+    const existingArtist = await loadPrimaryArtist();
+    if (existingArtist) {
+      artistMessage.textContent = "このアカウントでは既に演者登録済みです。カード内の修正ボタンから更新してください。";
+      return;
+    }
+
+    const payload = {
+      owner_user_id: currentUser.id,
+      name: document.getElementById("artistName").value.trim(),
+      description: document.getElementById("artistDescription").value.trim(),
+      icon_path: iconUrl,
+      x_url: document.getElementById("artistXUrl").value.trim(),
+      external_url: artistExternalUrlInput?.value.trim() || "",
+      detail_slug: paid ? (artistDetailSlugInput?.value.trim() || null) : null,
+      is_public: true,
+      deleted_at: null
+    };
+
+    const { error } = await supabase.from("artists").insert(payload);
+    if (error) throw error;
+
+    artistMessage.textContent = "演者を登録しました。";
+    artistForm.reset();
+    applyPlanRestrictions();
+
+    primaryArtist = await loadPrimaryArtist();
+    applyArtistGate();
+    await loadMyArtists();
+  } catch (error) {
+    console.error(error);
+    artistMessage.textContent = "演者登録に失敗しました。";
+  }
+});
+
 eventForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   eventMessage.textContent = "";
@@ -860,43 +880,28 @@ eventForm?.addEventListener("submit", async (e) => {
 
     const plan = getSafePlan(currentProfile);
     const paid = isPaidPlan(plan);
+    const limits = getPlanLimits(plan);
 
-    if (!editingEventId) {
-      const limits = getPlanLimits(plan);
-      const publishedCount = await countPublishedEvents(currentUser.id);
-      const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
+    const publishedCount = await countPublishedEvents(currentUser.id);
+    const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
 
-      if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
-        eventMessage.textContent = `このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`;
-        return;
-      }
-
-      if (
-        limits.maxMonthlyEventCreates !== null &&
-        monthlyCreateCount >= limits.maxMonthlyEventCreates
-      ) {
-        eventMessage.textContent = `このプランでは今月の新規イベント作成は ${limits.maxMonthlyEventCreates} 件までです。`;
-        return;
-      }
+    if (limits.maxEvents !== null && publishedCount >= limits.maxEvents) {
+      eventMessage.textContent = `このプランでは公開中イベントは ${limits.maxEvents} 件までです。先に別のイベントを非公開にしてください。`;
+      return;
     }
 
-    const imageFile = document.getElementById("eventImage").files[0];
-    let imageUrl = "";
-
-    if (editingEventId) {
-      const { data: currentEvent } = await supabase
-        .from("events")
-        .select("image_path")
-        .eq("id", editingEventId)
-        .eq("owner_user_id", currentUser.id)
-        .single();
-
-      imageUrl = currentEvent?.image_path || "";
+    if (
+      limits.maxMonthlyEventCreates !== null &&
+      monthlyCreateCount >= limits.maxMonthlyEventCreates
+    ) {
+      eventMessage.textContent = `このプランでは今月の新規イベント作成は ${limits.maxMonthlyEventCreates} 件までです。`;
+      return;
     }
 
-    if (imageFile) {
-      imageUrl = await uploadImage("event-images", imageFile, currentUser.id);
-    }
+    const imageFile = document.getElementById("eventImage")?.files?.[0];
+    const imageUrl = imageFile
+      ? await uploadImage("event-images", imageFile, currentUser.id)
+      : "";
 
     const payload = {
       owner_user_id: currentUser.id,
@@ -914,98 +919,19 @@ eventForm?.addEventListener("submit", async (e) => {
       deleted_at: null
     };
 
-    let error;
-
-    if (editingEventId) {
-      ({ error } = await supabase
-        .from("events")
-        .update(payload)
-        .eq("id", editingEventId)
-        .eq("owner_user_id", currentUser.id));
-    } else {
-      ({ error } = await supabase.from("events").insert(payload));
-    }
-
+    const { error } = await supabase.from("events").insert(payload);
     if (error) throw error;
 
-    eventMessage.textContent = editingEventId ? "イベントを更新しました。" : "イベントを投稿しました。";
-    resetEventForm();
+    eventMessage.textContent = "イベントを投稿しました。";
+    eventForm.reset();
+    setupTimeSelectors();
+    applyPlanRestrictions();
 
     await loadMyEvents();
     await refreshPlanSummary();
   } catch (error) {
     console.error(error);
     eventMessage.textContent = "イベント投稿に失敗しました。";
-  }
-});
-
-artistForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  artistMessage.textContent = "";
-
-  try {
-    const plan = getSafePlan(currentProfile);
-    const paid = isPaidPlan(plan);
-
-    let iconUrl = "";
-
-    if (editingArtistId) {
-      const { data: currentArtist } = await supabase
-        .from("artists")
-        .select("icon_path")
-        .eq("id", editingArtistId)
-        .eq("owner_user_id", currentUser.id)
-        .single();
-
-      iconUrl = currentArtist?.icon_path || "";
-    }
-
-    const iconFile = document.getElementById("artistIcon").files[0];
-    if (iconFile) {
-      iconUrl = await uploadImage("artist-icons", iconFile, currentUser.id);
-    }
-
-    const payload = {
-      owner_user_id: currentUser.id,
-      name: document.getElementById("artistName").value.trim(),
-      description: document.getElementById("artistDescription").value.trim(),
-      icon_path: iconUrl,
-      x_url: document.getElementById("artistXUrl").value.trim(),
-      detail_slug: paid ? (artistDetailSlugInput.value.trim() || null) : null,
-      is_public: true,
-      deleted_at: null
-    };
-
-    let error;
-
-    if (editingArtistId) {
-      ({ error } = await supabase
-        .from("artists")
-        .update(payload)
-        .eq("id", editingArtistId)
-        .eq("owner_user_id", currentUser.id));
-    } else {
-      const existingArtist = await loadPrimaryArtist();
-      if (existingArtist) {
-        artistMessage.textContent = "このアカウントでは既に演者登録済みです。修正ボタンから更新してください。";
-        return;
-      }
-
-      ({ error } = await supabase.from("artists").insert(payload));
-    }
-
-    if (error) throw error;
-
-    artistMessage.textContent = editingArtistId ? "演者情報を更新しました。" : "演者を登録しました。";
-    resetArtistForm();
-
-    primaryArtist = await loadPrimaryArtist();
-    applyArtistGate();
-
-    await loadMyArtists();
-  } catch (error) {
-    console.error(error);
-    artistMessage.textContent = "演者登録に失敗しました。";
   }
 });
 
@@ -1019,14 +945,12 @@ videoForm?.addEventListener("submit", async (e) => {
       return;
     }
 
-    if (!editingVideoId) {
-      const limits = getPlanLimits(getSafePlan(currentProfile));
-      const currentCount = await countUserVideos(currentUser.id);
+    const limits = getPlanLimits(getSafePlan(currentProfile));
+    const currentCount = await countUserVideos(currentUser.id);
 
-      if (limits.maxVideos !== null && currentCount >= limits.maxVideos) {
-        videoMessage.textContent = `このプランでは動画は ${limits.maxVideos} 件までです。`;
-        return;
-      }
+    if (limits.maxVideos !== null && currentCount >= limits.maxVideos) {
+      videoMessage.textContent = `このプランでは動画は ${limits.maxVideos} 件までです。`;
+      return;
     }
 
     const payload = {
@@ -1040,22 +964,11 @@ videoForm?.addEventListener("submit", async (e) => {
       deleted_at: null
     };
 
-    let error;
-
-    if (editingVideoId) {
-      ({ error } = await supabase
-        .from("videos")
-        .update(payload)
-        .eq("id", editingVideoId)
-        .eq("owner_user_id", currentUser.id));
-    } else {
-      ({ error } = await supabase.from("videos").insert(payload));
-    }
-
+    const { error } = await supabase.from("videos").insert(payload);
     if (error) throw error;
 
-    videoMessage.textContent = editingVideoId ? "動画を更新しました。" : "動画を投稿しました。";
-    resetVideoForm();
+    videoMessage.textContent = "動画を投稿しました。";
+    videoForm.reset();
     await loadMyVideos();
   } catch (error) {
     console.error(error);
@@ -1077,7 +990,10 @@ async function init() {
   currentProfile = await loadProfile(currentUser.id);
   primaryArtist = await loadPrimaryArtist();
 
-  userEmail.textContent = `ログイン中: ${currentUser.email}`;
+  if (userEmail) {
+    userEmail.textContent = `ログイン中: ${currentUser.email}`;
+  }
+
   await refreshPlanSummary();
   applyPlanRestrictions();
   applyArtistGate();
