@@ -186,3 +186,17 @@ nav a { color: var(--muted); font-weight: 500; }
 #authNav:empty {
   display: none;
 }
+
+.danger-btn {
+  background: rgba(255, 80, 110, 0.16);
+  color: #ffd7df;
+  border: 1px solid rgba(255, 80, 110, 0.38);
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.danger-btn:hover {
+  background: rgba(255, 80, 110, 0.24);
+}
