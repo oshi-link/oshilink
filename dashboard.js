@@ -1051,22 +1051,16 @@ deleteAccountBtn?.addEventListener("click", async () => {
   const confirmed = confirm(
     "本当にアカウントを削除しますか？\n\n削除すると、演者・イベント・動画などの投稿情報もすべて削除され、元に戻せません。"
   );
-
   if (!confirmed) return;
-
-  const secondConfirm = prompt('確認のため「削除」と入力してください。');
-  if (secondConfirm !== "削除") {
-    alert("入力が一致しなかったため、アカウント削除を中止しました。");
-    return;
-  }
 
   try {
     deleteAccountBtn.disabled = true;
     deleteAccountBtn.textContent = "削除中...";
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
 
+    const accessToken = sessionData?.session?.access_token;
     if (!accessToken) {
       throw new Error("ログイン情報が確認できませんでした。");
     }
@@ -1088,6 +1082,7 @@ deleteAccountBtn?.addEventListener("click", async () => {
       throw new Error(result?.error || "アカウント削除に失敗しました。");
     }
 
+    await supabase.auth.signOut();
     alert("アカウントを削除しました。");
     location.replace("index.html");
   } catch (error) {
