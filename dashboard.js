@@ -27,6 +27,8 @@ const ticketUrlInput = document.getElementById("ticketUrl");
 const artistDetailSlugInput = document.getElementById("artistDetailSlug");
 const artistExternalUrlInput = document.getElementById("artistExternalUrl");
 
+const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+
 let currentUser = null;
 let currentProfile = null;
 let primaryArtist = null;
@@ -1043,6 +1045,57 @@ videoForm?.addEventListener("submit", async (e) => {
 logoutBtn?.addEventListener("click", async () => {
   await supabase.auth.signOut();
   location.href = "login.html";
+});
+
+deleteAccountBtn?.addEventListener("click", async () => {
+  const confirmed = confirm(
+    "本当にアカウントを削除しますか？\n\n削除すると、演者・イベント・動画などの投稿情報もすべて削除され、元に戻せません。"
+  );
+
+  if (!confirmed) return;
+
+  const secondConfirm = prompt('確認のため「削除」と入力してください。');
+  if (secondConfirm !== "削除") {
+    alert("入力が一致しなかったため、アカウント削除を中止しました。");
+    return;
+  }
+
+  try {
+    deleteAccountBtn.disabled = true;
+    deleteAccountBtn.textContent = "削除中...";
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error("ログイン情報が確認できませんでした。");
+    }
+
+    const response = await fetch(
+      "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/delete-account",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result?.error || "アカウント削除に失敗しました。");
+    }
+
+    alert("アカウントを削除しました。");
+    location.replace("index.html");
+  } catch (error) {
+    console.error("アカウント削除失敗:", error);
+    alert(error.message || "アカウント削除に失敗しました。");
+    deleteAccountBtn.disabled = false;
+    deleteAccountBtn.textContent = "アカウントを削除する";
+  }
 });
 
 async function init() {
