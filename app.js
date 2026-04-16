@@ -18,6 +18,8 @@ const eventsPageMonthLabel = document.getElementById("eventsPageMonthLabel");
 const prevMonthBtn = document.getElementById("prevMonthBtn");
 const nextMonthBtn = document.getElementById("nextMonthBtn");
 
+const authNav = document.getElementById("authNav");
+
 let currentArea = "all";
 let selectedCalendarYear = 2026;
 let selectedCalendarMonth = 3;
@@ -46,6 +48,28 @@ function getTicketButtonHtml(item) {
   return item.ticketUrl
     ? `<a href="${item.ticketUrl}" class="mini-btn" target="_blank" rel="noopener noreferrer">チケット</a>`
     : `<span class="mini-btn disabled">未設定</span>`;
+}
+
+async function renderAuthNav() {
+  if (!authNav) return;
+
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user ?? null;
+
+  if (user) {
+    authNav.innerHTML = `
+      <a href="dashboard.html" class="ghost-btn">マイページ</a>
+      <button id="headerLogoutBtn" class="nav-cta" type="button">ログアウト</button>
+    `;
+
+    const headerLogoutBtn = document.getElementById("headerLogoutBtn");
+    headerLogoutBtn?.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      location.href = "index.html";
+    });
+  } else {
+    authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
+  }
 }
 
 async function loadEvents() {
@@ -128,14 +152,14 @@ async function loadArtists() {
 
     if (error) throw error;
 
-artists = (data || []).map(item => ({
-  name: item.name,
-  icon: item.icon_path || "",
-  description: item.description || "",
-  xUrl: item.x_url || "",
-  externalUrl: item.header_image_url || "",
-  detailUrl: item.detail_slug ? `artist.html?slug=${item.detail_slug}` : ""
-}));
+    artists = (data || []).map(item => ({
+      name: item.name,
+      icon: item.icon_path || "",
+      description: item.description || "",
+      xUrl: item.x_url || "",
+      externalUrl: item.external_url || item.header_image_url || "",
+      detailUrl: item.detail_slug ? `artist.html?slug=${item.detail_slug}` : ""
+    }));
 
     renderArtists(artists);
   } catch (error) {
@@ -293,7 +317,7 @@ function applyFilter(area = "all", keyword = "") {
 function getMonthFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const month = Number(params.get("month"));
-  return month >= 1 && month <= 12 ? month : 3;
+  return month >= 1 && month <= 12 ? month : new Date().getMonth() + 1;
 }
 
 function updateEventsPageUrl(month) {
@@ -404,6 +428,12 @@ searchInput?.addEventListener("keydown", (e) => {
 });
 
 async function init() {
+  await renderAuthNav();
+
+  supabase.auth.onAuthStateChange(async () => {
+    await renderAuthNav();
+  });
+
   await loadEvents();
   await loadVideos();
   await loadArtists();
