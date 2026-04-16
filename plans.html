@@ -13,7 +13,6 @@
 </head>
 <body>
 
-  <!-- ヘッダー -->
   <header class="site-header">
     <div class="container nav">
       <div class="logo"><a href="index.html">OshiLink</a></div>
@@ -37,8 +36,7 @@
 
       <div class="card-grid">
 
-        <!-- FREE -->
-        <div class="card">
+        <div class="card" id="planCardFree">
           <div class="card-body">
             <h3>FREE</h3>
             <p style="font-size: 1.8rem; font-weight: 800;">¥0<span style="font-size: 0.9rem;"> / 月</span></p>
@@ -50,14 +48,13 @@
               <li>通常表示</li>
             </ul>
 
-            <button class="ghost-btn" style="width: 100%; margin-top: 20px;">
-              利用中
-            </button>
+            <div id="planActionFree">
+              <button class="ghost-btn" style="width: 100%; margin-top: 20px;">FREE</button>
+            </div>
           </div>
         </div>
 
-        <!-- STANDARD -->
-        <div class="card">
+        <div class="card" id="planCardStandard">
           <div class="card-body">
             <h3>STANDARD</h3>
             <p style="font-size: 1.8rem; font-weight: 800;">¥980<span style="font-size: 0.9rem;"> / 月</span></p>
@@ -70,14 +67,13 @@
               <li>簡易分析</li>
             </ul>
 
-            <button class="primary-btn" style="width: 100%; margin-top: 20px;">
-              STANDARDにする
-            </button>
+            <div id="planActionStandard">
+              <button class="primary-btn" style="width: 100%; margin-top: 20px;">STANDARDにする</button>
+            </div>
           </div>
         </div>
 
-        <!-- PREMIUM -->
-        <div class="card">
+        <div class="card" id="planCardPremium">
           <div class="card-body">
             <h3>PREMIUM</h3>
             <p style="font-size: 1.8rem; font-weight: 800;">¥2,980<span style="font-size: 0.9rem;"> / 月</span></p>
@@ -90,9 +86,9 @@
               <li>優先掲載</li>
             </ul>
 
-            <button class="primary-btn" style="width: 100%; margin-top: 20px;">
-              PREMIUMにする
-            </button>
+            <div id="planActionPremium">
+              <button class="primary-btn" style="width: 100%; margin-top: 20px;">PREMIUMにする</button>
+            </div>
           </div>
         </div>
 
@@ -107,6 +103,57 @@
       <p>推し活がもっと楽になる場所</p>
     </div>
   </footer>
+
+  <script type="module">
+    import { supabase } from "./supabase.js";
+
+    async function loadCurrentPlan() {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+
+        if (!user) return;
+
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("plan")
+          .eq("id", user.id)
+          .single();
+
+        if (error || !profile) return;
+
+        const currentPlan = profile.plan || "free";
+
+        const actions = {
+          free: document.getElementById("planActionFree"),
+          standard: document.getElementById("planActionStandard"),
+          premium: document.getElementById("planActionPremium")
+        };
+
+        const labels = {
+          free: "FREE",
+          standard: "STANDARD",
+          premium: "PREMIUM"
+        };
+
+        Object.entries(actions).forEach(([planKey, el]) => {
+          if (!el) return;
+
+          if (planKey === currentPlan) {
+            el.innerHTML = `
+              <button class="ghost-btn plan-current-btn" style="width: 100%; margin-top: 20px;">
+                利用中
+              </button>
+            `;
+          }
+        });
+      } catch (error) {
+        console.error("プラン状態の取得失敗:", error);
+      }
+    }
+
+    loadCurrentPlan();
+  </script>
 
 </body>
 </html>
