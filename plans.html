@@ -124,6 +124,14 @@
 
         const currentPlan = profile.plan || "free";
 
+        const cardMap = {
+          free: document.getElementById("planCardFree"),
+          standard: document.getElementById("planCardStandard"),
+          premium: document.getElementById("planCardPremium")
+        };
+
+        cardMap[currentPlan]?.classList.add("plan-card-active");
+
         const actions = {
           free: document.getElementById("planActionFree"),
           standard: document.getElementById("planActionStandard"),
