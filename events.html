@@ -16,12 +16,16 @@
   <header class="site-header">
     <div class="container nav">
       <div class="logo"><a href="index.html">OshiLink</a></div>
+
       <nav>
         <a href="index.html">トップ</a>
         <a href="index.html#calendar">カレンダー</a>
         <a href="index.html#artists">演者一覧</a>
-        <a href="login.html">ログイン</a>
       </nav>
+
+      <div class="nav-right" id="authNav">
+        <a href="login.html" class="nav-cta">ログイン</a>
+      </div>
     </div>
   </header>
 
@@ -60,15 +64,12 @@
 
         <p id="eventsPageMonthLabel" class="events-page-month-label"></p>
 
-        <!-- イベント一覧 -->
         <div id="allEventsGrid" class="card-grid"></div>
 
       </div>
     </section>
   </main>
 
-  <!-- 🔥 ここ超重要 -->
   <script type="module" src="app.js"></script>
-
 </body>
 </html>
