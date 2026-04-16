@@ -141,3 +141,45 @@ nav a { color: var(--muted); font-weight: 500; }
   color: #fff;
   font-weight: 500;
 }
+
+.dashboard-form-wrap {
+  width: 100%;
+  max-width: 760px;
+}
+
+.dashboard-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dashboard-time-selects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#authNav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#headerLogoutBtn {
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .dashboard-form-wrap {
+    max-width: 100%;
+  }
+
+  .dashboard-time-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-time-selects {
+    grid-template-columns: 1fr 1fr;
+  }
+}
