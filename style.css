@@ -183,3 +183,6 @@ nav a { color: var(--muted); font-weight: 500; }
     grid-template-columns: 1fr 1fr;
   }
 }
+#authNav:empty {
+  display: none;
+}
