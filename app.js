@@ -65,6 +65,7 @@ async function renderAuthNav() {
     const headerLogoutBtn = document.getElementById("headerLogoutBtn");
     headerLogoutBtn?.addEventListener("click", async () => {
       await supabase.auth.signOut();
+      authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
       location.href = "index.html";
     });
   } else {
