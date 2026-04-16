@@ -200,3 +200,31 @@ nav a { color: var(--muted); font-weight: 500; }
 .danger-btn:hover {
   background: rgba(255, 80, 110, 0.24);
 }
+
+.user-info-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.compact-action-btn {
+  width: auto !important;
+  min-width: 140px;
+  flex: 0 0 auto !important;
+}
+
+.plan-current-btn {
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .user-info-actions {
+    width: 100%;
+  }
+
+  .compact-action-btn {
+    min-width: 0;
+  }
+}
