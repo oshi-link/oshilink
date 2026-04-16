@@ -136,6 +136,39 @@ function buildTimeText() {
   return `${openHour}:${openMinute} OPEN / ${startHour}:${startMinute} START`;
 }
 
+function parseTimeText(timeText = "") {
+  const match = timeText.match(/(\d{1,2}):(\d{2})\s*OPEN\s*\/\s*(\d{1,2}):(\d{2})\s*START/i);
+
+  if (!match) {
+    return {
+      openHour: "18",
+      openMinute: "00",
+      startHour: "18",
+      startMinute: "30"
+    };
+  }
+
+  return {
+    openHour: String(match[1]).padStart(2, "0"),
+    openMinute: String(match[2]).padStart(2, "0"),
+    startHour: String(match[3]).padStart(2, "0"),
+    startMinute: String(match[4]).padStart(2, "0")
+  };
+}
+
+function getHourOptions(selectedValue = "18") {
+  return Array.from({ length: 24 }, (_, i) => {
+    const value = String(i).padStart(2, "0");
+    return `<option value="${value}" ${value === selectedValue ? "selected" : ""}>${value}時</option>`;
+  }).join("");
+}
+
+function getMinuteOptions(selectedValue = "00") {
+  return ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"]
+    .map(value => `<option value="${value}" ${value === selectedValue ? "selected" : ""}>${value}分</option>`)
+    .join("");
+}
+
 async function countPublishedEvents(userId) {
   const { count, error } = await supabase
     .from("events")
@@ -268,6 +301,7 @@ function renderEvents(list) {
 
   myEvents.innerHTML = list.map(item => {
     const isEditing = String(editingEventId) === String(item.id);
+    const parsedTime = parseTimeText(item.time_text || "");
 
     if (isEditing) {
       return `
@@ -289,7 +323,33 @@ function renderEvents(list) {
 
               <input type="text" id="editEventPlace_${item.id}" value="${escapeHtml(item.place || "")}" placeholder="場所" />
               <input type="date" id="editEventDate_${item.id}" value="${escapeHtml(item.event_date || "")}" />
-              <input type="text" id="editEventTime_${item.id}" value="${escapeHtml(item.time_text || "")}" placeholder="18:00 OPEN / 18:30 START" />
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="display: grid; gap: 8px;">
+                  <label>OPEN</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <select id="editEventOpenHour_${item.id}">
+                      ${getHourOptions(parsedTime.openHour)}
+                    </select>
+                    <select id="editEventOpenMinute_${item.id}">
+                      ${getMinuteOptions(parsedTime.openMinute)}
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; gap: 8px;">
+                  <label>START</label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <select id="editEventStartHour_${item.id}">
+                      ${getHourOptions(parsedTime.startHour)}
+                    </select>
+                    <select id="editEventStartMinute_${item.id}">
+                      ${getMinuteOptions(parsedTime.startMinute)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <input type="text" id="editEventPrice_${item.id}" value="${escapeHtml(item.price || "")}" placeholder="料金" />
 
               <input
@@ -368,12 +428,17 @@ function renderEvents(list) {
       const id = btn.dataset.id;
       const currentItem = list.find(v => String(v.id) === String(id));
 
+      const openHour = document.getElementById(`editEventOpenHour_${id}`).value;
+      const openMinute = document.getElementById(`editEventOpenMinute_${id}`).value;
+      const startHour = document.getElementById(`editEventStartHour_${id}`).value;
+      const startMinute = document.getElementById(`editEventStartMinute_${id}`).value;
+
       const payload = {
         title: document.getElementById(`editEventTitle_${id}`).value.trim(),
         area: document.getElementById(`editEventArea_${id}`).value,
         place: document.getElementById(`editEventPlace_${id}`).value.trim(),
         event_date: document.getElementById(`editEventDate_${id}`).value,
-        time_text: document.getElementById(`editEventTime_${id}`).value.trim(),
+        time_text: `${openHour}:${openMinute} OPEN / ${startHour}:${startMinute} START`,
         price: document.getElementById(`editEventPrice_${id}`).value.trim(),
         detail_url: paid
           ? document.getElementById(`editEventDetailUrl_${id}`).value.trim()
@@ -479,7 +544,6 @@ function renderEvents(list) {
     });
   });
 }
-
 function renderArtists(list) {
   if (!myArtists) return;
 
