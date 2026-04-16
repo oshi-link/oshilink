@@ -55,26 +55,27 @@
         </div>
       </div>
 
-      <div class="card" style="margin-bottom: 24px;">
-        <div class="card-body">
-          <h3>演者登録</h3>
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-body">
+    <h3>演者登録</h3>
 
-          <form id="artistForm" style="display: grid; gap: 12px;">
-            <input type="text" id="artistName" placeholder="演者名" required />
-            <input type="text" id="artistDescription" placeholder="説明" />
-            <input type="text" id="artistXUrl" placeholder="XのURL" />
-            <input type="text" id="artistDetailSlug" placeholder="詳細URL用slug（有料プランのみ）" />
-            <label>
-              演者アイコン
-              <input type="file" id="artistIcon" accept="image/*" />
-            </label>
+    <form id="artistForm" style="display: grid; gap: 12px;">
+      <input type="text" id="artistName" placeholder="演者名" required />
+      <input type="text" id="artistDescription" placeholder="説明" />
+      <input type="text" id="artistXUrl" placeholder="XのURL" />
+      <input type="text" id="artistExternalUrl" placeholder="その他詳細URL" />
+      <input type="text" id="artistDetailSlug" placeholder="プロフィールURL用slug（有料プランのみ）" />
+      <label>
+        演者アイコン
+        <input type="file" id="artistIcon" accept="image/*" />
+      </label>
 
-            <button type="submit" class="primary-btn">演者を登録する</button>
-          </form>
+      <button type="submit" class="primary-btn">演者を登録する</button>
+    </form>
 
-          <p id="artistMessage" style="margin-top: 12px;"></p>
-        </div>
-      </div>
+    <p id="artistMessage" style="margin-top: 12px;"></p>
+  </div>
+</div>
 
       <div class="card" id="eventCard" style="margin-bottom: 24px;">
         <div class="card-body">
