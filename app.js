@@ -53,8 +53,16 @@ function getTicketButtonHtml(item) {
 async function renderAuthNav() {
   if (!authNav) return;
 
-  const { data } = await supabase.auth.getUser();
-  const user = data?.user ?? null;
+  authNav.innerHTML = "";
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error("セッション確認失敗:", error);
+    authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
+    return;
+  }
+
+  const user = data?.session?.user ?? null;
 
   if (user) {
     authNav.innerHTML = `
@@ -64,9 +72,15 @@ async function renderAuthNav() {
 
     const headerLogoutBtn = document.getElementById("headerLogoutBtn");
     headerLogoutBtn?.addEventListener("click", async () => {
-      await supabase.auth.signOut();
       authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
-      location.href = "index.html";
+
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        console.error("ログアウト失敗:", signOutError);
+      }
+
+      history.replaceState({}, "", "index.html");
+      location.replace("index.html");
     });
   } else {
     authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
@@ -431,8 +445,8 @@ searchInput?.addEventListener("keydown", (e) => {
 async function init() {
   await renderAuthNav();
 
-  supabase.auth.onAuthStateChange(async () => {
-    await renderAuthNav();
+  supabase.auth.onAuthStateChange(() => {
+    renderAuthNav();
   });
 
   await loadEvents();
