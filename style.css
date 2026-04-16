@@ -342,3 +342,15 @@ nav a { color: var(--muted); font-weight: 500; }
   justify-content: center;
   flex: 1 1 auto;
 }
+
+.plan-current-btn {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (min-width: 721px) {
+  #planCardPremium {
+    transform: scale(1.03);
+  }
+}
