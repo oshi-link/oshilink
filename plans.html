@@ -68,7 +68,7 @@
             </ul>
 
             <div id="planActionStandard" class="plan-action">
-              <button class="primary-btn">STANDARDにする</button>
+              <button id="btnStandard" class="primary-btn">STANDARDにする</button>
             </div>
           </div>
         </div>
@@ -87,7 +87,7 @@
             </ul>
 
             <div id="planActionPremium" class="plan-action">
-              <button class="primary-btn">PREMIUMにする</button>
+              <button id="btnPremium" class="primary-btn">PREMIUMにする</button>
             </div>
           </div>
         </div>
@@ -164,4 +164,40 @@
   </script>
 
 </body>
+<script>
+async function goToCheckout(plan) {
+  try {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+
+    const res = await fetch("https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ plan })
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("決済ページの取得に失敗しました");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("エラーが発生しました");
+  }
+}
+
+document.getElementById("btnStandard").addEventListener("click", () => {
+  goToCheckout("standard");
+});
+
+document.getElementById("btnPremium").addEventListener("click", () => {
+  goToCheckout("premium");
+});
+</script>
 </html>
