@@ -104,100 +104,102 @@
     </div>
   </footer>
 
-  <script type="module">
-    import { supabase } from "./supabase.js";
+<script type="module">
+  import { supabase } from "./supabase.js";
 
-    async function loadCurrentPlan() {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData?.user;
+  async function loadCurrentPlan() {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
 
-        if (!user) return;
+      if (!user) return;
 
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("plan")
-          .eq("id", user.id)
-          .single();
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single();
 
-        if (error || !profile) return;
+      if (error || !profile) return;
 
-        const currentPlan = profile.plan || "free";
+      const currentPlan = profile.plan || "free";
 
-        const cardMap = {
-          free: document.getElementById("planCardFree"),
-          standard: document.getElementById("planCardStandard"),
-          premium: document.getElementById("planCardPremium")
-        };
+      const cardMap = {
+        free: document.getElementById("planCardFree"),
+        standard: document.getElementById("planCardStandard"),
+        premium: document.getElementById("planCardPremium")
+      };
 
-        cardMap[currentPlan]?.classList.add("plan-card-active");
+      cardMap[currentPlan]?.classList.add("plan-card-active");
 
-        const actions = {
-          free: document.getElementById("planActionFree"),
-          standard: document.getElementById("planActionStandard"),
-          premium: document.getElementById("planActionPremium")
-        };
+      const actions = {
+        free: document.getElementById("planActionFree"),
+        standard: document.getElementById("planActionStandard"),
+        premium: document.getElementById("planActionPremium")
+      };
 
-        const labels = {
-          free: "FREE",
-          standard: "STANDARD",
-          premium: "PREMIUM"
-        };
+      Object.entries(actions).forEach(([planKey, el]) => {
+        if (!el) return;
 
-        Object.entries(actions).forEach(([planKey, el]) => {
-          if (!el) return;
-
-          if (planKey === currentPlan) {
-            el.innerHTML = `
-              <button class="ghost-btn plan-current-btn" style="width: 100%; margin-top: 20px;">
-                利用中
-              </button>
-            `;
-          }
-        });
-      } catch (error) {
-        console.error("プラン状態の取得失敗:", error);
-      }
+        if (planKey === currentPlan) {
+          el.innerHTML = `
+            <button class="ghost-btn plan-current-btn">
+              利用中
+            </button>
+          `;
+        }
+      });
+    } catch (error) {
+      console.error("プラン状態の取得失敗:", error);
     }
-
-    loadCurrentPlan();
-  </script>
-
-</body>
-<script>
-async function goToCheckout(plan) {
-  try {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-
-    const res = await fetch("https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ plan })
-    });
-
-    const data = await res.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("決済ページの取得に失敗しました");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("エラーが発生しました");
   }
-}
 
-document.getElementById("btnStandard").addEventListener("click", () => {
-  goToCheckout("standard");
-});
+  async function goToCheckout(plan) {
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
 
-document.getElementById("btnPremium").addEventListener("click", () => {
-  goToCheckout("premium");
-});
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        alert("決済を行うにはログインが必要です。");
+        location.href = "login.html";
+        return;
+      }
+
+      const res = await fetch(
+        "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/create-checkout-session",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ plan })
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "決済ページの取得に失敗しました");
+      }
+    } catch (err) {
+      console.error("checkout error:", err);
+      alert("エラーが発生しました");
+    }
+  }
+
+  loadCurrentPlan();
+
+  document.getElementById("btnStandard")?.addEventListener("click", () => {
+    goToCheckout("standard");
+  });
+
+  document.getElementById("btnPremium")?.addEventListener("click", () => {
+    goToCheckout("premium");
+  });
 </script>
+</body>
 </html>
