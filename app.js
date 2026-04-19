@@ -50,19 +50,22 @@ function getTicketButtonHtml(item) {
     : `<span class="mini-btn disabled">未設定</span>`;
 }
 
-async function renderAuthNav() {
+async function renderAuthNav(sessionUser = null) {
   if (!authNav) return;
 
   authNav.innerHTML = "";
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error("セッション確認失敗:", error);
-    authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
-    return;
-  }
+  let user = sessionUser;
 
-  const user = data?.user ?? null;
+  if (!user) {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("セッション確認失敗:", error);
+      authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
+      return;
+    }
+    user = data?.session?.user ?? null;
+  }
 
   if (user) {
     authNav.innerHTML = `
@@ -72,14 +75,11 @@ async function renderAuthNav() {
 
     const headerLogoutBtn = document.getElementById("headerLogoutBtn");
     headerLogoutBtn?.addEventListener("click", async () => {
-      authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
-
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) {
         console.error("ログアウト失敗:", signOutError);
       }
-
-      history.replaceState({}, "", "index.html");
+      authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
       location.replace("index.html");
     });
   } else {
@@ -242,11 +242,6 @@ function getYouTubeVideoId(url) {
   } catch {
     return null;
   }
-}
-
-function getVideoThumbnail(url) {
-  const videoId = getYouTubeVideoId(url);
-  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
 }
 
 function getVideoThumbnail(url) {
@@ -448,10 +443,11 @@ searchInput?.addEventListener("keydown", (e) => {
 });
 
 async function init() {
-  await renderAuthNav();
+  const { data } = await supabase.auth.getSession();
+  await renderAuthNav(data?.session?.user ?? null);
 
-  supabase.auth.onAuthStateChange(() => {
-    renderAuthNav();
+  supabase.auth.onAuthStateChange((_event, session) => {
+    renderAuthNav(session?.user ?? null);
   });
 
   await loadEvents();
