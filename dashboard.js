@@ -85,6 +85,16 @@ function isPaidPlan(plan) {
   return plan === "standard" || plan === "premium";
 }
 
+function formatDateJP(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}/${m}/${d}`;
+}
+
 function getMonthRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -206,6 +216,23 @@ async function countUserVideos(userId) {
 
   if (error) throw error;
   return count || 0;
+}
+
+async function loadLatestSubscription(userId) {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("target_plan, target_plan_effective_at, current_period_end, status, updated_at")
+    .eq("user_id", userId)
+    .eq("provider", "stripe")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error("サブスクリプション取得失敗:", error);
+    return null;
+  }
+
+  return data?.[0] || null;
 }
 
 async function loadPrimaryArtist() {
@@ -546,6 +573,7 @@ function renderEvents(list) {
     });
   });
 }
+
 function renderArtists(list) {
   if (!myArtists) return;
 
@@ -873,6 +901,7 @@ async function refreshPlanSummary() {
   const limits = getPlanLimits(plan);
   const publishedCount = await countPublishedEvents(currentUser.id);
   const monthlyCreateCount = await countMonthlyEventCreates(currentUser.id);
+  const latestSubscription = await loadLatestSubscription(currentUser.id);
 
   const publishedText =
     limits.maxEvents === null ? `${publishedCount}件` : `${publishedCount}/${limits.maxEvents}件`;
@@ -882,7 +911,24 @@ async function refreshPlanSummary() {
       ? `${monthlyCreateCount}件`
       : `${monthlyCreateCount}/${limits.maxMonthlyEventCreates}件`;
 
-  userPlan.textContent = `現在のプラン: ${plan.toUpperCase()} ｜ 公開中イベント: ${publishedText} ｜ 今月の新規作成: ${monthlyText}`;
+  const planLabel = plan.toUpperCase();
+
+  let planSummaryHtml = `現在のプラン: ${planLabel}`;
+
+  if (latestSubscription?.target_plan && latestSubscription?.target_plan_effective_at) {
+    const currentValidUntil = formatDateJP(latestSubscription.target_plan_effective_at);
+    const nextPlanLabel = String(latestSubscription.target_plan).toUpperCase();
+
+    planSummaryHtml = `
+      現在のプラン: ${planLabel}（${currentValidUntil}まで有効）<br>
+      次回プラン: ${nextPlanLabel}（${currentValidUntil}から切り替わり）
+    `;
+  }
+
+  userPlan.innerHTML = `
+    ${planSummaryHtml}<br>
+    公開中イベント: ${publishedText} ｜ 今月の新規作成: ${monthlyText}
+  `;
 }
 
 artistForm?.addEventListener("submit", async (e) => {
