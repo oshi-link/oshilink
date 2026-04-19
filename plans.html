@@ -108,10 +108,45 @@
   import { supabase } from "./supabase.js";
 
   let currentPlan = "free";
+  let pendingTargetPlan = null;
+  let pendingEffectiveAt = null;
 
-  function setCurrentPlanUI(plan) {
-    currentPlan = plan || "free";
+  function formatDateJP(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}/${m}/${d}`;
+  }
 
+  function buildPendingPlanText() {
+    if (!pendingTargetPlan || !pendingEffectiveAt || currentPlan === "free") return "";
+
+    const currentLabel = currentPlan.toUpperCase();
+    const targetLabel = pendingTargetPlan.toUpperCase();
+    const effectiveText = formatDateJP(pendingEffectiveAt);
+
+    return `
+      <p class="helper-text" style="margin-top: 10px; line-height: 1.8;">
+        ${currentLabel}：${effectiveText}まで有効<br>
+        ${targetLabel}：${effectiveText}から切り替わり
+      </p>
+    `;
+  }
+
+  function getCardStatusHtml(planKey) {
+    if (!pendingTargetPlan || !pendingEffectiveAt) return "";
+
+    if (planKey === currentPlan || planKey === pendingTargetPlan) {
+      return buildPendingPlanText();
+    }
+
+    return "";
+  }
+
+  function setCurrentPlanUI() {
     const cardMap = {
       free: document.getElementById("planCardFree"),
       standard: document.getElementById("planCardStandard"),
@@ -130,21 +165,66 @@
       premium: document.getElementById("planActionPremium")
     };
 
-    actions.free.innerHTML = `
-      <button class="ghost-btn ${currentPlan === "free" ? "plan-current-btn" : ""}">
-        ${currentPlan === "free" ? "利用中" : "FREE"}
-      </button>
-    `;
+    if (actions.free) {
+      actions.free.innerHTML = `
+        <div style="width: 100%;">
+          <button class="ghost-btn ${currentPlan === "free" ? "plan-current-btn" : ""}">
+            ${currentPlan === "free" ? "利用中" : "FREE"}
+          </button>
+        </div>
+      `;
+    }
 
-    if (currentPlan === "standard") {
-      actions.standard.innerHTML = `<button class="ghost-btn plan-current-btn">利用中</button>`;
-      actions.premium.innerHTML = `<button id="btnPremium" class="primary-btn">PREMIUMに変更する</button>`;
+    if (currentPlan === "free") {
+      actions.standard.innerHTML = `
+        <div style="width: 100%;">
+          <button id="btnStandard" class="primary-btn">STANDARDにする</button>
+        </div>
+      `;
+
+      actions.premium.innerHTML = `
+        <div style="width: 100%;">
+          <button id="btnPremium" class="primary-btn">PREMIUMにする</button>
+        </div>
+      `;
+    } else if (currentPlan === "standard") {
+      actions.standard.innerHTML = `
+        <div style="width: 100%;">
+          <button class="ghost-btn plan-current-btn">利用中</button>
+          ${getCardStatusHtml("standard")}
+        </div>
+      `;
+
+      actions.premium.innerHTML = `
+        <div style="width: 100%;">
+          <button id="btnPremium" class="primary-btn">PREMIUMに変更する</button>
+        </div>
+      `;
     } else if (currentPlan === "premium") {
-      actions.standard.innerHTML = `<button id="btnStandard" class="primary-btn">STANDARDに変更する</button>`;
-      actions.premium.innerHTML = `<button class="ghost-btn plan-current-btn">利用中</button>`;
-    } else {
-      actions.standard.innerHTML = `<button id="btnStandard" class="primary-btn">STANDARDにする</button>`;
-      actions.premium.innerHTML = `<button id="btnPremium" class="primary-btn">PREMIUMにする</button>`;
+      const standardButtonText =
+        pendingTargetPlan === "standard" ? "切り替え予約中" : "STANDARDに変更する";
+
+      const standardButtonClass =
+        pendingTargetPlan === "standard" ? "ghost-btn plan-current-btn" : "primary-btn";
+
+      const standardButtonId =
+        pendingTargetPlan === "standard" ? "" : 'id="btnStandard"';
+
+      actions.standard.innerHTML = `
+        <div style="width: 100%;">
+          <button ${standardButtonId} class="${standardButtonClass}">
+            ${standardButtonText}
+          </button>
+          ${getCardStatusHtml("standard")}
+        </div>
+      `;
+
+      actions.premium.innerHTML = `
+        <div style="width: 100%;">
+          <button class="ghost-btn plan-current-btn">利用中</button>
+          ${getCardStatusHtml("premium")}
+        </div>
+      `;
     }
 
     bindPlanButtons();
@@ -152,29 +232,55 @@
 
   async function loadCurrentPlan() {
     try {
+      pendingTargetPlan = null;
+      pendingEffectiveAt = null;
+
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
 
       if (!user) {
-        setCurrentPlanUI("free");
+        currentPlan = "free";
+        setCurrentPlanUI();
         return;
       }
 
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("plan")
-        .eq("id", user.id)
-        .single();
+      const [{ data: profile, error: profileError }, { data: subRows, error: subError }] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select("plan")
+            .eq("id", user.id)
+            .single(),
+          supabase
+            .from("subscriptions")
+            .select("target_plan, target_plan_effective_at, status, updated_at")
+            .eq("user_id", user.id)
+            .eq("provider", "stripe")
+            .order("updated_at", { ascending: false })
+            .limit(1)
+        ]);
 
-      if (error || !profile) {
-        setCurrentPlanUI("free");
+      if (profileError || !profile) {
+        currentPlan = "free";
+        setCurrentPlanUI();
         return;
       }
 
-      setCurrentPlanUI(profile.plan || "free");
+      currentPlan = profile.plan || "free";
+
+      if (!subError && subRows?.length) {
+        const latestSub = subRows[0];
+        pendingTargetPlan = latestSub.target_plan || null;
+        pendingEffectiveAt = latestSub.target_plan_effective_at || null;
+      }
+
+      setCurrentPlanUI();
     } catch (error) {
       console.error("プラン状態の取得失敗:", error);
-      setCurrentPlanUI("free");
+      currentPlan = "free";
+      pendingTargetPlan = null;
+      pendingEffectiveAt = null;
+      setCurrentPlanUI();
     }
   }
 
@@ -279,5 +385,6 @@
 
   loadCurrentPlan();
 </script>
+  
 </body>
 </html>
