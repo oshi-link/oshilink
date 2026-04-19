@@ -10,13 +10,79 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    .plan-note {
+      margin-top: 10px;
+      color: #bfc4d8;
+      font-size: 0.92rem;
+      line-height: 1.8;
+    }
+
+    .plan-subactions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(560px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+      padding: 24px;
+    }
+
+    .modal-card h3 {
+      margin: 0 0 12px;
+      font-size: 1.35rem;
+    }
+
+    .modal-card p {
+      margin: 0;
+      color: #bfc4d8;
+      line-height: 1.8;
+    }
+
+    .modal-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions .primary-btn,
+    .modal-actions .ghost-btn {
+      flex: 1;
+      min-width: 160px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
   <header class="site-header">
     <div class="container nav">
       <div class="logo"><a href="index.html">OshiLink</a></div>
-      <nav>
+      <nav id="headerNav">
         <a href="index.html">トップ</a>
         <a href="events.html">ライブ一覧</a>
         <a href="login.html">ログイン</a>
@@ -104,368 +170,481 @@
     </div>
   </footer>
 
-<script type="module">
-  import { supabase } from "./supabase.js";
+  <div id="planConfirmModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-card">
+      <h3 id="planConfirmTitle">プラン変更の確認</h3>
+      <p id="planConfirmMessage">このプランに変更しますか？</p>
+      <div class="modal-actions">
+        <button id="planConfirmCancel" class="ghost-btn" type="button">いいえ</button>
+        <button id="planConfirmOk" class="primary-btn" type="button">はい</button>
+      </div>
+    </div>
+  </div>
 
-  let currentPlan = "free";
-  let pendingTargetPlan = null;
-  let pendingEffectiveAt = null;
+  <script type="module">
+    import { supabase } from "./supabase.js";
 
-  function formatDateJP(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}/${m}/${d}`;
-  }
+    let currentPlan = "free";
+    let pendingTargetPlan = null;
+    let pendingEffectiveAt = null;
+    let modalAction = null;
 
-  async function renderHeaderNav() {
-    try {
-      const nav = document.querySelector(".site-header nav");
-      if (!nav) return;
+    const modal = document.getElementById("planConfirmModal");
+    const modalTitle = document.getElementById("planConfirmTitle");
+    const modalMessage = document.getElementById("planConfirmMessage");
+    const modalCancelBtn = document.getElementById("planConfirmCancel");
+    const modalOkBtn = document.getElementById("planConfirmOk");
 
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
-
-      if (user) {
-        nav.innerHTML = `
-          <a href="index.html">トップ</a>
-          <a href="events.html">ライブ一覧</a>
-          <a href="dashboard.html">マイページ</a>
-        `;
-      } else {
-        nav.innerHTML = `
-          <a href="index.html">トップ</a>
-          <a href="events.html">ライブ一覧</a>
-          <a href="login.html">ログイン</a>
-        `;
-      }
-    } catch (error) {
-      console.error("ヘッダーナビ更新失敗:", error);
+    function formatDateJP(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}/${m}/${d}`;
     }
-  }
 
-  function buildPendingPlanText() {
-    if (!pendingTargetPlan || !pendingEffectiveAt || currentPlan === "free") return "";
+    async function renderHeaderNav() {
+      try {
+        const headerNav = document.getElementById("headerNav");
+        if (!headerNav) return;
 
-    const currentLabel = currentPlan.toUpperCase();
-    const targetLabel = pendingTargetPlan.toUpperCase();
-    const effectiveText = formatDateJP(pendingEffectiveAt);
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
 
-    return `
-      <p class="helper-text" style="margin-top: 10px; line-height: 1.8;">
-        ${currentLabel}：${effectiveText}まで有効<br>
-        ${targetLabel}：${effectiveText}から切り替わり
-      </p>
-    `;
-  }
+        if (user) {
+          headerNav.innerHTML = `
+            <a href="index.html">トップ</a>
+            <a href="events.html">ライブ一覧</a>
+            <a href="dashboard.html">マイページ</a>
+          `;
+        } else {
+          headerNav.innerHTML = `
+            <a href="index.html">トップ</a>
+            <a href="events.html">ライブ一覧</a>
+            <a href="login.html">ログイン</a>
+          `;
+        }
+      } catch (error) {
+        console.error("ヘッダーナビ更新失敗:", error);
+      }
+    }
 
-  function buildCancelPendingButton() {
-    if (!pendingTargetPlan) return "";
-    return `
-      <button id="btnCancelPendingChange" class="ghost-btn" style="margin-top: 10px;">
-        切り替え予約を取り消す
-      </button>
-    `;
-  }
+    function openModal({ title, message, onConfirm }) {
+      modalTitle.textContent = title;
+      modalMessage.innerHTML = message;
+      modalAction = onConfirm;
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+    }
 
-  function getCardStatusHtml(planKey) {
-    if (!pendingTargetPlan || !pendingEffectiveAt) return "";
+    function closeModal() {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+      modalAction = null;
+    }
 
-    if (planKey === currentPlan || planKey === pendingTargetPlan) {
+    modalCancelBtn?.addEventListener("click", closeModal);
+    modalOkBtn?.addEventListener("click", async () => {
+      if (!modalAction) {
+        closeModal();
+        return;
+      }
+
+      const action = modalAction;
+      closeModal();
+      await action();
+    });
+
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    function buildPendingPlanText() {
+      if (!pendingTargetPlan || !pendingEffectiveAt || currentPlan === "free") return "";
+
+      const currentLabel = currentPlan.toUpperCase();
+      const targetLabel = pendingTargetPlan.toUpperCase();
+      const effectiveText = formatDateJP(pendingEffectiveAt);
+
       return `
-        ${buildPendingPlanText()}
-        ${planKey === pendingTargetPlan ? buildCancelPendingButton() : ""}
+        <div class="plan-note">
+          ${currentLabel}：${effectiveText}まで有効<br>
+          ${targetLabel}：${effectiveText}から切り替わり
+        </div>
       `;
     }
 
-    return "";
-  }
-
-  function setCurrentPlanUI() {
-    const cardMap = {
-      free: document.getElementById("planCardFree"),
-      standard: document.getElementById("planCardStandard"),
-      premium: document.getElementById("planCardPremium")
-    };
-
-    Object.values(cardMap).forEach(card => {
-      card?.classList.remove("plan-card-active");
-    });
-
-    cardMap[currentPlan]?.classList.add("plan-card-active");
-
-    const actions = {
-      free: document.getElementById("planActionFree"),
-      standard: document.getElementById("planActionStandard"),
-      premium: document.getElementById("planActionPremium")
-    };
-
-    if (actions.free) {
-      actions.free.innerHTML = `
-        <div style="width: 100%;">
-          <button class="ghost-btn ${currentPlan === "free" ? "plan-current-btn" : ""}">
-            ${currentPlan === "free" ? "利用中" : "FREE"}
+    function buildCancelPendingButton() {
+      if (!pendingTargetPlan) return "";
+      return `
+        <div class="plan-subactions">
+          <button id="btnCancelPendingChange" class="ghost-btn" type="button">
+            切り替え予約を取り消す
           </button>
         </div>
       `;
     }
 
-    if (currentPlan === "free") {
-      actions.standard.innerHTML = `
-        <div style="width: 100%;">
-          <button id="btnStandard" class="primary-btn">STANDARDにする</button>
-        </div>
-      `;
+    function getCardStatusHtml(planKey) {
+      if (!pendingTargetPlan || !pendingEffectiveAt) return "";
 
-      actions.premium.innerHTML = `
-        <div style="width: 100%;">
-          <button id="btnPremium" class="primary-btn">PREMIUMにする</button>
-        </div>
-      `;
-    } else if (currentPlan === "standard") {
-      const standardButtonText =
-        pendingTargetPlan === "free" ? "切り替え予約中" : "利用中";
-
-      const standardButtonClass =
-        pendingTargetPlan === "free" ? "ghost-btn plan-current-btn" : "ghost-btn plan-current-btn";
-
-      actions.standard.innerHTML = `
-        <div style="width: 100%;">
-          <button class="${standardButtonClass}">${standardButtonText}</button>
-          ${getCardStatusHtml("standard")}
-        </div>
-      `;
-
-      actions.premium.innerHTML = `
-        <div style="width: 100%;">
-          <button id="btnPremium" class="primary-btn">PREMIUMに変更する</button>
-        </div>
-      `;
-    } else if (currentPlan === "premium") {
-      const standardButtonText =
-        pendingTargetPlan === "standard" ? "切り替え予約中" : "STANDARDに変更する";
-
-      const standardButtonClass =
-        pendingTargetPlan === "standard" ? "ghost-btn plan-current-btn" : "primary-btn";
-
-      const standardButtonId =
-        pendingTargetPlan === "standard" ? "" : 'id="btnStandard"';
-
-      actions.standard.innerHTML = `
-        <div style="width: 100%;">
-          <button ${standardButtonId} class="${standardButtonClass}">
-            ${standardButtonText}
-          </button>
-          ${getCardStatusHtml("standard")}
-        </div>
-      `;
-
-      actions.premium.innerHTML = `
-        <div style="width: 100%;">
-          <button class="ghost-btn plan-current-btn">利用中</button>
-          ${getCardStatusHtml("premium")}
-        </div>
-      `;
-    }
-
-    bindPlanButtons();
-  }
-
-  async function loadCurrentPlan() {
-    try {
-      pendingTargetPlan = null;
-      pendingEffectiveAt = null;
-
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData?.user;
-
-      if (!user) {
-        currentPlan = "free";
-        setCurrentPlanUI();
-        return;
+      if (planKey === currentPlan || planKey === pendingTargetPlan) {
+        return `
+          ${buildPendingPlanText()}
+          ${planKey === pendingTargetPlan ? buildCancelPendingButton() : ""}
+        `;
       }
 
-      const [{ data: profile, error: profileError }, { data: subRows, error: subError }] =
-        await Promise.all([
-          supabase
-            .from("profiles")
-            .select("plan")
-            .eq("id", user.id)
-            .single(),
-          supabase
-            .from("subscriptions")
-            .select("target_plan, target_plan_effective_at, status, updated_at")
-            .eq("user_id", user.id)
-            .eq("provider", "stripe")
-            .order("updated_at", { ascending: false })
-            .limit(1)
-        ]);
-
-      if (profileError || !profile) {
-        currentPlan = "free";
-        setCurrentPlanUI();
-        return;
-      }
-
-      currentPlan = profile.plan || "free";
-
-      if (!subError && subRows?.length) {
-        const latestSub = subRows[0];
-        pendingTargetPlan = latestSub.target_plan || null;
-        pendingEffectiveAt = latestSub.target_plan_effective_at || null;
-      }
-
-      setCurrentPlanUI();
-    } catch (error) {
-      console.error("プラン状態の取得失敗:", error);
-      currentPlan = "free";
-      pendingTargetPlan = null;
-      pendingEffectiveAt = null;
-      setCurrentPlanUI();
-    }
-  }
-
-  async function getAccessToken() {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-
-    const accessToken = sessionData?.session?.access_token;
-    if (!accessToken) {
-      alert("決済を行うにはログインが必要です。");
-      location.href = "login.html";
-      return null;
+      return "";
     }
 
-    return accessToken;
-  }
+    function setCurrentPlanUI() {
+      const cardMap = {
+        free: document.getElementById("planCardFree"),
+        standard: document.getElementById("planCardStandard"),
+        premium: document.getElementById("planCardPremium")
+      };
 
-  async function goToCheckout(plan) {
-    const accessToken = await getAccessToken();
-    if (!accessToken) return;
+      Object.values(cardMap).forEach(card => {
+        card?.classList.remove("plan-card-active");
+      });
 
-    try {
-      const res = await fetch(
-        "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/create-checkout-session",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ plan })
+      cardMap[currentPlan]?.classList.add("plan-card-active");
+
+      const actions = {
+        free: document.getElementById("planActionFree"),
+        standard: document.getElementById("planActionStandard"),
+        premium: document.getElementById("planActionPremium")
+      };
+
+      if (actions.free) {
+        if (currentPlan === "free") {
+          actions.free.innerHTML = `
+            <div style="width: 100%;">
+              <button class="ghost-btn plan-current-btn">利用中</button>
+            </div>
+          `;
+        } else {
+          const freeButtonText =
+            pendingTargetPlan === "free" ? "切り替え予約中" : "FREEに変更する";
+
+          const freeButtonClass =
+            pendingTargetPlan === "free" ? "ghost-btn plan-current-btn" : "primary-btn";
+
+          const freeButtonId =
+            pendingTargetPlan === "free" ? "" : 'id="btnFree"';
+
+          actions.free.innerHTML = `
+            <div style="width: 100%;">
+              <button ${freeButtonId} class="${freeButtonClass}">
+                ${freeButtonText}
+              </button>
+              ${getCardStatusHtml("free")}
+            </div>
+          `;
         }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "決済ページの取得に失敗しました");
-        return;
       }
 
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("決済ページの取得に失敗しました");
-      }
-    } catch (err) {
-      console.error("checkout error:", err);
-      alert("エラーが発生しました");
-    }
-  }
-
-  async function changeSubscription(plan) {
-    const accessToken = await getAccessToken();
-    if (!accessToken) return;
-
-    try {
-      const res = await fetch(
-        "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/change-subscription",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ plan })
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "プラン変更に失敗しました");
-        return;
-      }
-
-      alert(data.message || "プランを変更しました。");
-      await loadCurrentPlan();
-    } catch (err) {
-      console.error("change subscription error:", err);
-      alert("エラーが発生しました");
-    }
-  }
-
-  async function cancelPendingDowngrade() {
-    const accessToken = await getAccessToken();
-    if (!accessToken) return;
-
-    try {
-      const res = await fetch(
-        "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/change-subscription",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ plan: currentPlan })
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "切り替え予約の取り消しに失敗しました");
-        return;
-      }
-
-      alert(data.message || "切り替え予約を取り消しました。");
-      await loadCurrentPlan();
-    } catch (err) {
-      console.error("cancel pending downgrade error:", err);
-      alert("エラーが発生しました");
-    }
-  }
-
-  function bindPlanButtons() {
-    document.getElementById("btnStandard")?.addEventListener("click", async () => {
       if (currentPlan === "free") {
-        await goToCheckout("standard");
-      } else {
-        await changeSubscription("standard");
+        actions.standard.innerHTML = `
+          <div style="width: 100%;">
+            <button id="btnStandard" class="primary-btn">STANDARDにする</button>
+          </div>
+        `;
+
+        actions.premium.innerHTML = `
+          <div style="width: 100%;">
+            <button id="btnPremium" class="primary-btn">PREMIUMにする</button>
+          </div>
+        `;
+      } else if (currentPlan === "standard") {
+        const standardButtonText =
+          pendingTargetPlan === "free" ? "利用中" : "利用中";
+
+        actions.standard.innerHTML = `
+          <div style="width: 100%;">
+            <button class="ghost-btn plan-current-btn">${standardButtonText}</button>
+            ${getCardStatusHtml("standard")}
+          </div>
+        `;
+
+        actions.premium.innerHTML = `
+          <div style="width: 100%;">
+            <button id="btnPremium" class="primary-btn">PREMIUMに変更する</button>
+          </div>
+        `;
+      } else if (currentPlan === "premium") {
+        const standardButtonText =
+          pendingTargetPlan === "standard" ? "切り替え予約中" : "STANDARDに変更する";
+
+        const standardButtonClass =
+          pendingTargetPlan === "standard" ? "ghost-btn plan-current-btn" : "primary-btn";
+
+        const standardButtonId =
+          pendingTargetPlan === "standard" ? "" : 'id="btnStandard"';
+
+        actions.standard.innerHTML = `
+          <div style="width: 100%;">
+            <button ${standardButtonId} class="${standardButtonClass}">
+              ${standardButtonText}
+            </button>
+            ${getCardStatusHtml("standard")}
+          </div>
+        `;
+
+        actions.premium.innerHTML = `
+          <div style="width: 100%;">
+            <button class="ghost-btn plan-current-btn">利用中</button>
+            ${getCardStatusHtml("premium")}
+          </div>
+        `;
       }
-    });
 
-    document.getElementById("btnPremium")?.addEventListener("click", async () => {
-      if (currentPlan === "free") {
-        await goToCheckout("premium");
-      } else {
-        await changeSubscription("premium");
+      bindPlanButtons();
+    }
+
+    async function loadCurrentPlan() {
+      try {
+        pendingTargetPlan = null;
+        pendingEffectiveAt = null;
+
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData?.user;
+
+        if (!user) {
+          currentPlan = "free";
+          setCurrentPlanUI();
+          return;
+        }
+
+        const [{ data: profile, error: profileError }, { data: subRows, error: subError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("plan")
+              .eq("id", user.id)
+              .single(),
+            supabase
+              .from("subscriptions")
+              .select("target_plan, target_plan_effective_at, status, updated_at")
+              .eq("user_id", user.id)
+              .eq("provider", "stripe")
+              .order("updated_at", { ascending: false })
+              .limit(1)
+          ]);
+
+        if (profileError || !profile) {
+          currentPlan = "free";
+          setCurrentPlanUI();
+          return;
+        }
+
+        currentPlan = profile.plan || "free";
+
+        if (!subError && subRows?.length) {
+          const latestSub = subRows[0];
+          pendingTargetPlan = latestSub.target_plan || null;
+          pendingEffectiveAt = latestSub.target_plan_effective_at || null;
+        }
+
+        setCurrentPlanUI();
+      } catch (error) {
+        console.error("プラン状態の取得失敗:", error);
+        currentPlan = "free";
+        pendingTargetPlan = null;
+        pendingEffectiveAt = null;
+        setCurrentPlanUI();
       }
-    });
+    }
 
-    document.getElementById("btnCancelPendingChange")?.addEventListener("click", async () => {
-      await cancelPendingDowngrade();
-    });
-  }
+    async function getAccessToken() {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
 
-  await renderHeaderNav();
-  await loadCurrentPlan();
-</script>
-  
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        location.href = "login.html";
+        return null;
+      }
+
+      return accessToken;
+    }
+
+    async function goToCheckout(plan) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const res = await fetch(
+          "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/create-checkout-session",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ plan })
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "決済ページの取得に失敗しました");
+          return;
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert("決済ページの取得に失敗しました");
+        }
+      } catch (err) {
+        console.error("checkout error:", err);
+        alert("エラーが発生しました");
+      }
+    }
+
+    async function changeSubscription(plan) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const res = await fetch(
+          "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/change-subscription",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ plan })
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "プラン変更に失敗しました");
+          return;
+        }
+
+        alert(data.message || "プランを変更しました。");
+        await loadCurrentPlan();
+      } catch (err) {
+        console.error("change subscription error:", err);
+        alert("エラーが発生しました");
+      }
+    }
+
+    async function cancelPendingDowngrade() {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      try {
+        const res = await fetch(
+          "https://zoprqzivoqpfylujdaun.supabase.co/functions/v1/change-subscription",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ plan: currentPlan })
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "切り替え予約の取り消しに失敗しました");
+          return;
+        }
+
+        alert(data.message || "切り替え予約を取り消しました。");
+        await loadCurrentPlan();
+      } catch (err) {
+        console.error("cancel pending downgrade error:", err);
+        alert("エラーが発生しました");
+      }
+    }
+
+    function bindPlanButtons() {
+      document.getElementById("btnFree")?.addEventListener("click", async () => {
+        const message = currentPlan === "standard"
+          ? "FREEへ切り替え予約しますか？<br>現在のSTANDARDは終了日まで利用でき、その後FREEに切り替わります。"
+          : "FREEへ切り替え予約しますか？<br>現在のPREMIUMは終了日まで利用でき、その後FREEに切り替わります。";
+
+        openModal({
+          title: "FREEへの切り替え確認",
+          message,
+          onConfirm: async () => {
+            await changeSubscription("free");
+          }
+        });
+      });
+
+      document.getElementById("btnStandard")?.addEventListener("click", async () => {
+        if (currentPlan === "free") {
+          openModal({
+            title: "STANDARD加入の確認",
+            message: "STANDARDに加入しますか？<br>決済ページへ移動します。",
+            onConfirm: async () => {
+              await goToCheckout("standard");
+            }
+          });
+        } else {
+          const message = currentPlan === "premium"
+            ? "STANDARDへ切り替え予約しますか？<br>現在のPREMIUMは終了日まで利用でき、その後STANDARDに切り替わります。"
+            : "STANDARDへ変更しますか？";
+
+          openModal({
+            title: "STANDARD変更の確認",
+            message,
+            onConfirm: async () => {
+              await changeSubscription("standard");
+            }
+          });
+        }
+      });
+
+      document.getElementById("btnPremium")?.addEventListener("click", async () => {
+        if (currentPlan === "free") {
+          openModal({
+            title: "PREMIUM加入の確認",
+            message: "PREMIUMに加入しますか？<br>決済ページへ移動します。",
+            onConfirm: async () => {
+              await goToCheckout("premium");
+            }
+          });
+        } else {
+          openModal({
+            title: "PREMIUM変更の確認",
+            message: "PREMIUMへアップグレードしますか？<br>差額が即時請求されます。",
+            onConfirm: async () => {
+              await changeSubscription("premium");
+            }
+          });
+        }
+      });
+
+      document.getElementById("btnCancelPendingChange")?.addEventListener("click", async () => {
+        openModal({
+          title: "切り替え予約の取り消し",
+          message: "予約中のプラン切り替えを取り消しますか？",
+          onConfirm: async () => {
+            await cancelPendingDowngrade();
+          }
+        });
+      });
+    }
+
+    await renderHeaderNav();
+    await loadCurrentPlan();
+  </script>
 </body>
 </html>
