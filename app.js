@@ -55,14 +55,14 @@ async function renderAuthNav() {
 
   authNav.innerHTML = "";
 
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await supabase.auth.getUser();
   if (error) {
     console.error("セッション確認失敗:", error);
     authNav.innerHTML = `<a href="login.html" class="nav-cta">ログイン</a>`;
     return;
   }
 
-  const user = data?.session?.user ?? null;
+  const user = data?.user ?? null;
 
   if (user) {
     authNav.innerHTML = `
