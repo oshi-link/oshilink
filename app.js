@@ -249,6 +249,11 @@ function getVideoThumbnail(url) {
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
 }
 
+function getVideoThumbnail(url) {
+  const videoId = getYouTubeVideoId(url);
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
+}
+
 function renderVideos(list) {
   if (!videoGrid) return;
 
