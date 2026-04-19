@@ -956,6 +956,8 @@ async function loadMyVideos() {
 }
 
 async function refreshPlanSummary() {
+  if (!currentUser) return;
+  
   const plan = getSafePlan(currentProfile);
   const limits = getPlanLimits(plan);
   const publishedCount = await countPublishedEvents(currentUser.id);
