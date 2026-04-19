@@ -362,12 +362,9 @@
           </div>
         `;
       } else if (currentPlan === "standard") {
-        const standardButtonText =
-          pendingTargetPlan === "free" ? "利用中" : "利用中";
-
         actions.standard.innerHTML = `
           <div style="width: 100%;">
-            <button class="ghost-btn plan-current-btn">${standardButtonText}</button>
+            <button class="ghost-btn plan-current-btn">利用中</button>
             ${getCardStatusHtml("standard")}
           </div>
         `;
@@ -527,6 +524,12 @@
         );
 
         const data = await res.json();
+
+        // 初回加入なのに change-subscription が呼ばれたら checkout へフォールバック
+        if (!res.ok && data?.code === "NO_ACTIVE_SUBSCRIPTION" && plan !== "free") {
+          await goToCheckout(plan);
+          return;
+        }
 
         if (!res.ok) {
           alert(data.error || "プラン変更に失敗しました");
