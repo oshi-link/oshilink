@@ -1,4 +1,34 @@
 import { supabase } from "./supabase.js";
+
+function renderPaymentWarning(sub) {
+  const existing = document.getElementById("paymentWarning");
+  if (existing) existing.remove();
+
+  if (!sub) return;
+
+  if (sub.status === "past_due") {
+    const div = document.createElement("div");
+    div.id = "paymentWarning";
+
+    div.style.marginBottom = "16px";
+    div.style.padding = "14px 16px";
+    div.style.borderRadius = "12px";
+    div.style.background = "rgba(255, 80, 80, 0.12)";
+    div.style.border = "1px solid rgba(255, 80, 80, 0.3)";
+    div.style.color = "#ffb3b3";
+    div.style.fontSize = "0.95rem";
+    div.style.lineHeight = "1.6";
+
+    div.innerHTML = `
+      ⚠ お支払いに失敗しています。<br>
+      支払い方法をご確認ください。
+    `;
+
+    const container = document.querySelector(".container");
+    container.prepend(div);
+  }
+}
+
 import { getPlanLimits } from "./plan-utils.js";
 
 const userEmail = document.getElementById("userEmail");
