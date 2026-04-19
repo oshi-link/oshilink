@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-config.js";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: window.sessionStorage,
+    storage: window.localStorage
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true
