@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex,nofollow">
-  <meta name="description" content="OshiLinkの制作中プレビュー。歌い手と、ライブと、あなたをつなぐ。">
-  <title>OshiLink｜制作中プレビュー</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./performer-links.css">
+  <meta name="description" content="歌い手のプロフィール、歌ってみた、ライブ情報をまとめて探せるOshiLink。">
+  <title>OshiLink｜歌い手とライブを探す</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./performer-links.css">
 </head>
 <body>
 <a class="skip" href="#main">本文へ</a>
-<div class="preview"><span id="data-status">公開情報を読み込んでいます</span><label><input type="checkbox" id="demo"> 表示サンプルを使う</label></div>
+<div class="preview" id="data-banner"><span id="data-status">公開情報を読み込んでいます</span><label id="demo-control" hidden><input type="checkbox" id="demo"> 表示サンプルを使う</label></div>
 <header class="header wrap"><a href="#" class="brand" aria-label="OshiLink ホーム（仮文字ロゴ）">Oshi<span>Link</span><small>歌い手と、ライブと、あなたをつなぐ。</small></a><nav aria-label="メインメニュー"><a href="#calendar">ライブ</a><a href="#singers">歌い手</a><a href="#voices">歌ってみた</a><a href="#recruit">出演者募集</a></nav><button class="outline" data-account>ログイン / 登録</button></header>
 <main id="main">
 <section class="hero wrap">
@@ -28,6 +27,6 @@
 <footer class="wrap"><a class="brand" href="#">Oshi<span>Link</span></a><p>歌い手と、ライブと、あなたをつなぐ。</p><a href="mailto:d.oshilink@gmail.com">ご要望・お問い合わせ ↗</a><small>公開情報のみを表示します。</small></footer>
 <nav class="bottom-nav" aria-label="スマートフォンメニュー"><a href="#">ホーム</a><a href="#calendar">カレンダー</a><a href="#voices">探す</a><button data-account>マイページ</button></nav>
 <dialog id="dialog"><button id="close-dialog" class="dialog-close" aria-label="閉じる">×</button><div id="dialog-content"></div></dialog>
-<script type="module" src="./app.mjs?v=public-data-1"></script>
-<script type="module" src="./artists.mjs?v=public-data-1"></script>
+<script type="module" src="./app.mjs?v=release-2"></script>
+<script type="module" src="./artists.mjs?v=release-2"></script>
 </body></html>

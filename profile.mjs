@@ -2,7 +2,9 @@ import {supabase} from './supabase-client.mjs';
 import {loadPublicData} from './public-data.mjs';
 import {favoriteState,toggleFavorite} from './saved-content.mjs';
 const $=id=>document.getElementById(id);
-const requestedArtist=new URLSearchParams(location.search).get('artist');
+const params=new URLSearchParams(location.search);
+const requestedArtist=params.get('artist');
+const sampleRequested=/^[A-L]$/.test(requestedArtist||'');
 const artistId=/^[A-L]$/.test(requestedArtist||'')?requestedArtist:'A';
 if(artistId!=='A'){
   document.title=`歌い手 ${artistId}｜プロフィール表示サンプル｜OshiLink`;
@@ -20,13 +22,13 @@ $('follow').onclick=()=>{const active=$('follow').getAttribute('aria-pressed')!=
 $('has-lp').onchange=()=>{const hide=!$('has-lp').checked;$('services').hidden=hide;$('service-nav').hidden=hide;};
 document.querySelectorAll('[data-preview]').forEach(button=>button.onclick=()=>{$('profile-message').textContent=button.dataset.preview;$('profile-dialog').showModal();});$('profile-close').onclick=()=>$('profile-dialog').close();
 
-const realId=new URLSearchParams(location.search).get('id');
+const realId=params.get('id');
 if(/^[0-9a-f-]{36}$/i.test(realId||'')){
   try{
     const data=await loadPublicData(supabase),profile=data.profiles.find(item=>item.id===realId);
     if(!profile)throw new Error('プロフィールが見つかりません。');
     document.title=`${profile.display_name}｜OshiLink`;
-    document.querySelector('.preview').textContent='公開プロフィール';
+    document.querySelector('.preview').hidden=true;
     document.querySelector('.identity h1').textContent=profile.display_name;
     document.querySelector('.identity-copy > p:last-child').textContent=profile.bio||'紹介文はまだ登録されていません。';
     document.querySelector('.identity .sample')?.remove();
@@ -45,4 +47,7 @@ if(/^[0-9a-f-]{36}$/i.test(realId||'')){
     if(profile.lp_url){const link=document.createElement('a');link.className='primary';link.href=profile.lp_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='サービス・ご依頼案内を見る ↗';$('services').querySelector('button')?.replaceWith(link);}else{$('services').hidden=true;$('service-nav').hidden=true;}
     document.querySelector('.preview-options').hidden=true;
   }catch(error){document.querySelector('.preview').textContent=error.message;document.querySelector('#profile').hidden=true;}
+}else if(!sampleRequested){
+  document.querySelector('.preview').textContent='プロフィールが指定されていません。';
+  document.querySelector('#profile').hidden=true;
 }
