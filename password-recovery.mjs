@@ -1,4 +1,4 @@
-export const PASSWORD_EMAIL_ENABLED=false;
+export const PASSWORD_EMAIL_ENABLED=true;
 
 export function validateRecoveryEmail(value){
   const email=String(value||'').trim();

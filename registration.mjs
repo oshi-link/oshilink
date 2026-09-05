@@ -1,4 +1,4 @@
-export const REGISTRATION_ENABLED=false;
+export const REGISTRATION_ENABLED=true;
 export const REGISTRATION_TERMS_VERSION='terms-v1_privacy-v2';
 export const CAPTCHA_ENABLED=true;
 export const TURNSTILE_SITE_KEY='0x4AAAAAAEo4oLDgXBagWxAX';
