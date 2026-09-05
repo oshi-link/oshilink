@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>登録を完了する｜OshiLink 制作中</title>
+  <link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./account.css">
+</head>
+<body>
+<div class="preview">会員登録は準備中 · 確認メール後の画面</div>
+<header class="header wrap"><a href="./index.html" class="brand">Oshi<span>Link</span><small>歌い手と、ライブと、あなたをつなぐ。</small></a><a class="outline" href="./account.html#login">ログインへ</a></header>
+<main class="account-shell">
+  <p class="eyebrow">WELCOME TO OSHILINK</p>
+  <h1>登録を完了して、<br>あなたのページへ。</h1>
+  <p id="verification-status" role="status">メール確認状態を確認しています…</p>
+  <form id="complete-form">
+    <label class="field" for="complete-age">年齢区分<select id="complete-age" required><option value="">選択してください</option><option value="teen">13〜17歳</option><option value="adult">18歳以上</option></select></label>
+    <label id="complete-guardian-field" class="consent" hidden><input id="complete-guardian" type="checkbox">保護者の同意を得ています</label>
+    <fieldset class="role-complete"><legend>利用タイプ（複数選択できます）</legend>
+      <label><input type="checkbox" value="singer">歌い手</label><label><input type="checkbox" value="organizer">主催者</label><label><input type="checkbox" value="listener">リスナー</label>
+    </fieldset>
+    <div id="initial-names"></div>
+    <label class="consent"><input id="complete-terms" type="checkbox" required>利用規約案・プライバシー案内の内容に同意します</label>
+    <button id="complete-submit" class="primary" type="submit" disabled>登録を完了する</button>
+    <p id="complete-status" class="quiet" role="status" aria-live="polite"></p>
+  </form>
+</main>
+<script type="module" src="./register-complete-page.mjs"></script>
+</body>
+</html>

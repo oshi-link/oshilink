@@ -1,0 +1,25 @@
+.account-shell { max-width: 680px; margin: 36px auto 80px; padding: 0 24px; }
+.account-shell h1 { font-size: clamp(24px, 6.5vw, 40px); line-height: 1.4; white-space: nowrap; letter-spacing: -.04em; }
+.account-shell h2 { font-size: 26px; }
+.account-shell p { line-height: 1.8; }
+.account-tabs { display: flex; gap: 12px; margin-top: 32px; }
+.account-tabs button { flex: 1; padding: 16px; border: 1px solid #79516b; border-radius: 12px 12px 0 0; }
+.account-tabs button[aria-pressed="true"] { background: #ab126b; color: white; }
+.account-panel { padding: clamp(20px, 5vw, 36px); background: #1d1c25; border: 1px solid #79516b; border-radius: 0 0 18px 18px; }
+.field { display: grid; gap: 10px; margin: 20px 0; }
+.field input, .field select { box-sizing: border-box; width: 100%; min-width: 0; padding: 14px; color: #f6f2f7; background: #111117; border: 1px solid #77717e; border-radius: 8px; font: inherit; }
+.credential-preview { border: 0; padding: 0; margin: 24px 0; min-width: 0; }
+.credential-preview legend { color: #bbb6c6; font-size: 14px; }
+.consent { display: flex; gap: 12px; align-items: start; line-height: 1.8; }
+.consent input { margin-top: 8px; }
+.account-guide { border-top: 1px solid #55505c; margin-top: 30px; padding-top: 14px; }
+.account-guide ol { padding-left: 24px; line-height: 2; }
+.account-shell button:disabled { opacity: .6; cursor: not-allowed; }
+.account-shell [hidden] { display: none; }
+.account-shell a { overflow-wrap: anywhere; }
+#login-status[data-state="error"], #session-status[data-state="error"] { color: #ff9fcf; }
+#login-status[data-state="success"], #session-status[data-state="success"] { color: #9ee7c0; }
+.session-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.role-complete { display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0; padding: 18px; border: 1px solid #79516b; border-radius: 12px; }
+.role-complete legend { padding: 0 8px; }
+.role-complete label { display: flex; gap: 8px; align-items: center; }

@@ -1,0 +1,235 @@
+import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
+import {bindImagePreview} from './local-image-preview.mjs';
+import {buildProfilePayload,saveMyProfiles} from './profile-save.mjs';
+import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
+import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
+import {supabase} from './supabase-client.mjs';
+const $ = id => document.getElementById(id);
+window.oshilinkSupabase=supabase;
+let sessionLoggedIn=false;
+
+async function syncSession(){
+  const {data:{session}}=await supabase.auth.getSession();
+  const loggedIn=Boolean(session?.user);
+  sessionLoggedIn=loggedIn;
+  $('session-banner').textContent=loggedIn?'マイページ · ログイン中':'マイページ · 未ログイン';
+  $('session-status').textContent=loggedIn
+    ? 'ログイン済みです。プロフィールを非公開状態で保存できます。'
+    : 'プロフィールの確認はできます。保存するにはログインしてください。';
+  $('login-link').hidden=loggedIn;
+  $('logout-button').hidden=!loggedIn;
+  return loggedIn;
+}
+
+$('logout-button').addEventListener('click',async()=>{
+  $('logout-button').disabled=true;
+  const {error}=await supabase.auth.signOut();
+  if(error){
+    $('session-status').textContent='ログアウトできませんでした。通信状況をご確認ください。';
+    $('logout-button').disabled=false;
+    return;
+  }
+  await syncSession();
+  $('logout-button').disabled=false;
+});
+
+await syncSession();
+$('live-form').querySelector('.quiet:last-child').textContent='ログイン後、同じ日・同じ表記の公開ライブを確認し、新規登録または出演追加を選べます。新規登録は非公開状態で保存します。';
+const imageResets=[];
+for(const section of document.querySelectorAll('[data-role]')){
+  const role=section.dataset.role;
+  const editor=document.createElement('fieldset');editor.className='profile-image-editor';
+  const legend=document.createElement('legend');legend.textContent='プロフィール画像（任意）';editor.append(legend);
+  const help=document.createElement('p');help.className='quiet';help.textContent='画像を選ぶと、この画面内で見え方を確認できます。JPEG・PNG・WebP、10MBまで。保存・アップロードは行いません。';editor.append(help);
+  for(const [kind,title] of [['avatar','アイコン'],['cover','カバー画像']]){
+    const block=document.createElement('div');block.className='image-choice';
+    const label=document.createElement('label');label.className='field';label.textContent=title;
+    if(kind==='cover'){
+      const recommendation=document.createElement('span');recommendation.className='cover-ratio-hint';
+      recommendation.textContent='比率 3：1｜1500 × 500 px';label.append(recommendation);
+    }
+    const input=document.createElement('input');input.type='file';input.accept='image/jpeg,image/png,image/webp';input.id=`${role}-${kind}-input`;label.append(input);
+    const frame=document.createElement('div');frame.className=`local-image-frame local-image-${kind}`;
+    const placeholder=document.createElement('span');placeholder.textContent='画像未設定';
+    const image=document.createElement('img');image.alt=`選択した${title}のプレビュー`;image.hidden=true;frame.append(placeholder,image);
+    const remove=document.createElement('button');remove.type='button';remove.className='outline';remove.textContent=`${title}の選択を解除`;remove.disabled=true;
+    const notice=document.createElement('p');notice.className='quiet';notice.id=`${role}-${kind}-notice`;notice.setAttribute('role','status');input.setAttribute('aria-describedby',notice.id);
+    const note=document.createElement('p');note.className='quiet';note.textContent=kind==='avatar'?'丸い枠に合わせて表示します。画像の端が隠れる場合があります。':'Xで使っているヘッダー画像をそのまま選べます。別の比率の画像も使えますが、余白が入る場合があります。';
+    block.append(label,frame,note,remove,notice);editor.append(block);
+    imageResets.push(bindImagePreview({input,image,notice,remove,placeholder}));
+  }
+  section.append(editor);
+}
+window.addEventListener('pagehide',()=>imageResets.forEach(reset=>reset()));
+const roles = () => [...document.querySelectorAll('.role-picker input:checked')].map(input => input.value);
+let pendingProfiles=null;
+let pendingVideo=null;
+let pendingLive=null;
+function selectPanel(panel) {
+  document.querySelectorAll('[data-panel]').forEach(button => {
+    const selected = button.dataset.panel === panel;
+    button.setAttribute('aria-pressed', String(selected));
+    $(button.dataset.panel + '-panel').hidden = !selected;
+  });
+}
+function syncRoles() {
+  const selected = roles();
+  const creator = selected.includes('singer') || selected.includes('organizer');
+  $('lp-intro').textContent = lpIntro(selected);
+  document.querySelectorAll('[data-role], [data-creator]').forEach(section => {
+    section.hidden = section.hasAttribute('data-creator') ? !creator : !selected.includes(section.dataset.role);
+    section.querySelectorAll('input, textarea, select').forEach(input => input.disabled = section.hidden);
+  });
+  const panels = allowedPanels(selected);
+  document.querySelector('[data-panel="video"]').disabled = !panels.video;
+  document.querySelector('[data-panel="live"]').disabled = !panels.live;
+  const active = document.querySelector('[data-panel][aria-pressed="true"]');
+  if (active.disabled) selectPanel('profile');
+  $('role-notice').textContent = selected.length ? '' : '利用タイプを1つ以上選んでください。';
+  $('profile-form').querySelector('[type="submit"]').disabled = !selected.length;
+}
+document.querySelectorAll('.role-picker input').forEach(input => input.addEventListener('change', syncRoles));
+document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {selectPanel(button.dataset.panel);if(button.dataset.panel==='manage')renderManagement();}));
+
+async function renderManagement(){
+  const status=$('management-status'),list=$('management-list');list.replaceChildren();
+  if(!sessionLoggedIn){status.textContent='一覧を見るにはログインしてください。';return;}
+  status.textContent='一覧を読み込んでいます…';
+  try{
+    const content=await loadMyContent(window.oshilinkSupabase);
+    const groups=[['プロフィール','profiles',content.profiles],['歌ってみた','videos',content.videos],['登録したライブ','events',content.events]];
+    for(const [title,type,items] of groups){
+      const section=document.createElement('section');section.className='management-group';const heading=document.createElement('h3');heading.textContent=title;section.append(heading);
+      if(!items.length){const empty=document.createElement('p');empty.className='quiet';empty.textContent='まだありません。';section.append(empty);}
+      for(const item of items){
+        const row=document.createElement('div');row.className='management-item';const text=document.createElement('p');text.textContent=`${item.display_name||item.title}${item.event_date?'｜'+item.event_date:''}｜${item.is_public?'公開中':'非公開'}`;
+        const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=type==='events'?(item.is_public?'公開済み':'公開する'):(item.is_public?'非公開にする':'公開する');button.disabled=type==='events'&&item.is_public;
+        button.addEventListener('click',async()=>{button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events')await publishMyEvent(window.oshilinkSupabase,item.id);else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();}catch(error){status.textContent=error.message;button.disabled=false;}});
+        row.append(text,button);section.append(row);
+      }
+      list.append(section);
+    }
+    status.textContent='本人の登録内容だけを表示しています。';
+  }catch(error){status.textContent=error.message;}
+}
+$('refresh-management').addEventListener('click',renderManagement);
+voiceTags.forEach(tag => {
+  const label = document.createElement('label');
+  const input = document.createElement('input');
+  input.type = 'checkbox'; input.name = 'tag'; input.value = tag;
+  label.append(input, document.createTextNode(tag));
+  $('posting-tags').append(label);
+  input.addEventListener('change', () => {
+    const count = $('posting-tags').querySelectorAll(':checked').length;
+    $('tag-count').textContent = count + ' / 5個選択';
+    $('posting-tags').querySelectorAll('input').forEach(item => item.disabled = tagDisabled(item.checked, count));
+  });
+});
+const labels = { singerName: '活動名', started: '活動開始日', singerRegion: '活動地域', style: 'ライブスタイル', organizerName: '主催者名', brand: 'ライブブランド名', organizerRegion: '開催地域', concept: 'ライブコンセプト', listenerName: 'リスナー名', bio: '紹介文', cover: 'カバー内のメッセージ', x: '公開X URL', lp: '専用LP URL', title: 'タイトル', url: '動画URL', description: '紹介・説明', tag: '歌声タグ', date: '開催日', region: '開催地域', venue: '会場', doors: '開場', time: '開演', status: '開催状態', price: '料金表示', ticket: 'チケットURL' };
+function appendReviewImage(container,source,title,kind){
+  if(!source || source.hidden || !source.complete || !source.naturalWidth || !source.src.startsWith('blob:'))return;
+  const figure=document.createElement('figure');figure.className='review-image';
+  const caption=document.createElement('figcaption');caption.textContent=title;
+  const frame=document.createElement('div');frame.className=kind==='flyer'?'review-flyer-frame':`local-image-frame local-image-${kind}`;
+  const image=document.createElement('img');image.src=source.src;image.alt=title+'の確認画像';
+  image.onerror=()=>{image.hidden=true;caption.textContent=title+'を読み込めませんでした。編集画面で選び直してください。';};
+  frame.append(image);figure.append(caption,frame);container.append(figure);
+}
+function appendReviewImages(form){
+  const container=document.createElement('section');container.className='review-images';
+  if(form.id==='profile-form'){
+    const roleNames={singer:'歌い手',organizer:'主催者',listener:'リスナー'};
+    for(const role of roles()){
+      const section=form.querySelector(`[data-role="${role}"]`);
+      for(const [kind,title] of [['avatar','アイコン'],['cover','カバー画像']]){
+        appendReviewImage(container,section.querySelector(`.local-image-${kind} img`),`${roleNames[role]}の${title}`,kind);
+      }
+    }
+  }else if(form.id==='live-form')appendReviewImage(container,$('flyer-preview'),'フライヤー','flyer');
+  if(container.childElementCount){
+    const heading=document.createElement('h3');heading.textContent='選択した画像';container.prepend(heading);
+    $('review-content').append(container);
+  }
+}
+document.querySelectorAll('.studio form').forEach(form => {
+  form.querySelectorAll('input[required]').forEach(input => {
+    const validate = () => input.setCustomValidity(input.value.trim() ? '' : 'この項目を入力してください。');
+    input.addEventListener('input', validate);
+    validate();
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const list = document.createElement('dl');
+    for (const [key, value] of new FormData(form)) {
+      if (typeof value !== 'string' || !value.trim()) continue;
+      const term = document.createElement('dt'), detail = document.createElement('dd');
+      term.textContent = labels[key] || key; detail.textContent = value;
+      list.append(term, detail);
+    }
+    $('review-content').replaceChildren(list);
+    appendReviewImages(form);
+    pendingProfiles=form.id==='profile-form'
+      ? buildProfilePayload(Object.fromEntries(new FormData(form)),roles())
+      : null;
+    pendingVideo=form.id==='video-form'?buildVideoPost({
+      ...Object.fromEntries(new FormData(form)),tag:new FormData(form).getAll('tag')
+    }):null;
+    pendingLive=form.id==='live-form'?buildLivePost(Object.fromEntries(new FormData(form))):null;
+    if(pendingLive){
+      const note=document.createElement('section');note.className='event-candidates';
+      const candidates=sessionLoggedIn?await findEventCandidates(window.oshilinkSupabase,pendingLive):[];
+      const heading=document.createElement('h3');heading.textContent=candidates.length?'同じライブかもしれない候補があります':'同じ日・同じ表記の公開ライブは見つかりませんでした';note.append(heading);
+      for(const candidate of candidates){
+        const label=document.createElement('label'),radio=document.createElement('input');radio.type='radio';radio.name='existing-event';radio.value=candidate.id;
+        label.append(radio,document.createTextNode(`${candidate.title}｜${candidate.region}・${candidate.venue}｜${String(candidate.starts).slice(0,5)}`));note.append(label);
+      }
+      const separate=document.createElement('label'),radio=document.createElement('input');radio.type='radio';radio.name='existing-event';radio.value='';radio.checked=true;
+      separate.append(radio,document.createTextNode(candidates.length?'別のライブとして新規登録する':'新しいライブとして登録する'));note.append(separate);
+      if(candidates.length&&!roles().includes('singer')){note.append(document.createTextNode('主催者プロフィールでは既存ライブへの出演追加はできません。'));note.querySelectorAll('input[value]:not([value=""])').forEach(input=>input.disabled=true);}
+      $('review-content').prepend(note);
+    }
+    const saveable=Boolean(pendingProfiles||pendingVideo||pendingLive);
+    $('save-review').hidden=!saveable;
+    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?'ライブ情報を保存':'プロフィールを保存';
+    $('save-review').disabled=!saveable || !sessionLoggedIn;
+    $('save-review-status').hidden=!saveable;
+    $('save-review-status').dataset.state='';
+    $('save-review-status').textContent=sessionLoggedIn
+      ? '確認後、「プロフィールを保存」を押してください。'
+      : '保存するにはログインしてください。';
+    $('review-dialog').showModal();
+  });
+});
+let imageUrl;
+$('flyer-input').addEventListener('change', () => {
+  if (imageUrl) URL.revokeObjectURL(imageUrl);
+  const image = $('flyer-preview');
+  image.hidden = true; image.removeAttribute('src');
+  $('flyer-notice').textContent = '';
+  const file = $('flyer-input').files[0];
+  if (!file) return;
+  if (!validFlyer(file)) {
+    $('flyer-notice').textContent = '10MB以下のJPEG・PNG・WebP画像を選んでください。';
+    $('flyer-input').value = ''; return;
+  }
+  image.onerror = () => { image.hidden = true; $('flyer-notice').textContent = '画像を読み込めませんでした。別の画像を選んでください。'; $('flyer-input').value = ''; };
+  imageUrl = URL.createObjectURL(file); image.src = imageUrl; image.hidden = false;
+});
+$('close-review').onclick = $('back-to-edit').onclick = () => $('review-dialog').close();
+$('save-review').addEventListener('click',async()=>{
+  const button=$('save-review'),status=$('save-review-status');
+  button.disabled=true;status.dataset.state='';status.textContent='保存しています…';
+  try{
+    if(pendingProfiles)await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);
+    else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
+    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);}
+    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':'プロフィールを保存しました。公開状態は変更していません。';
+  }catch(error){
+    status.dataset.state='error';status.textContent=error.message;
+    button.disabled=false;
+  }
+});
+$('review-dialog').addEventListener('close',()=>{
+  $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;$('save-review').disabled=true;
+});
+syncRoles();
