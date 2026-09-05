@@ -1,5 +1,6 @@
 import {supabase} from './supabase-client.mjs';
 import {loadPublicData} from './public-data.mjs';
+import {favoriteState,toggleFavorite} from './saved-content.mjs';
 const $=id=>document.getElementById(id);
 const requestedArtist=new URLSearchParams(location.search).get('artist');
 const artistId=/^[A-L]$/.test(requestedArtist||'')?requestedArtist:'A';
@@ -31,7 +32,9 @@ if(/^[0-9a-f-]{36}$/i.test(realId||'')){
     document.querySelector('.identity .sample')?.remove();
     document.querySelector('.avatar').firstChild.textContent=profile.display_name.slice(0,1);
     $('cover-message').textContent=profile.cover_message||'';$('cover-message').hidden=!profile.cover_message;
-    document.querySelector('.follow-area').hidden=true;
+    const followArea=document.querySelector('.follow-area'),followButton=$('follow'),followHelp=followArea.querySelector('small');followArea.hidden=false;followHelp.textContent='推し登録は自分だけに表示されます。';
+    try{const active=await favoriteState(supabase,profile.id);followButton.setAttribute('aria-pressed',String(active));followButton.textContent=active?'♥ 推し登録済み':'♡ 推し登録';}catch{followButton.setAttribute('aria-pressed','false');followButton.textContent='♡ 推し登録';}
+    followButton.onclick=async()=>{followButton.disabled=true;$('profile-status').textContent='保存しています…';try{const active=await toggleFavorite(supabase,profile.id);followButton.setAttribute('aria-pressed',String(active));followButton.textContent=active?'♥ 推し登録済み':'♡ 推し登録';$('profile-status').textContent=active?'推し登録しました。':'推し登録を解除しました。';}catch(error){$('profile-status').textContent=error.message;}finally{followButton.disabled=false;}};
     const about=$('about');about.querySelectorAll(':scope > p:not(.eyebrow)').forEach(node=>node.remove());
     const bio=document.createElement('p');bio.textContent=profile.bio||'紹介文はまだ登録されていません。';about.querySelector('h2').after(bio);
     const dl=about.querySelector('dl');dl.replaceChildren();for(const [term,value] of [['活動地域',profile.region||'未登録'],['ライブスタイル',profile.style||'未登録']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=term;dd.textContent=value;dl.append(dt,dd);}
