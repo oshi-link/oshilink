@@ -11,7 +11,7 @@ const baseMonth=month,baseYear=year;
 const events=[{id:'sample-a',title:'ABCライブ',date:dateKey(baseYear,baseMonth,now.getDate()),region:'東京都',time:'18:00',venue:'サンプル会場 A',performers:['歌い手 A','歌い手 B'],status:'開催予定'},{id:'sample-b',title:'アコースティック・ステージ',date:dateKey(baseYear,baseMonth,Math.min(now.getDate()+3,new Date(baseYear,baseMonth+1,0).getDate())),region:'大阪府',time:'17:30',venue:'サンプル会場 B',performers:['歌い手 C'],status:'開催予定'},{id:'sample-c',title:'オンライン歌枠ライブ',date:dateKey(baseYear,baseMonth,Math.min(now.getDate()+7,new Date(baseYear,baseMonth+1,0).getDate())),region:'オンライン',time:'20:00',venue:'配信会場（サンプル）',performers:['歌い手 A'],status:'延期'}];
 const videos=[{title:'歌ってみた · サンプル A',voice:'透きとおる',tags:['透明感','高音','やさしい']},{title:'歌ってみた · サンプル B',voice:'深く、響く',tags:['低音','ハスキー','やさしい']},{title:'歌ってみた · サンプル C',voice:'心はずむ',tags:['元気','爽やか','力強い']}];
 const tags=['透明感','ハスキー','低音','高音','やさしい','力強い','ささやき系','爽やか','元気'];let selectedTags=[];
-let publicEvents=[],publicVideos=[];
+let publicEvents=[],publicVideos=[],publicRecruitments=[];
 function availableEvents(){return ($('demo').checked?events:publicEvents).filter(e=>!$('region').value||e.region===$('region').value);}
 function empty(title,description){const div=document.createElement('div');div.className='empty';const h=document.createElement('h3');h.textContent=title;const p=document.createElement('p');p.textContent=description;div.append(h,p);return div;}
 const sampleProfileIds=new Map(Array.from({length:12},(_,i)=>{const id=String.fromCharCode(65+i);return ['歌い手 '+id,id];}));
@@ -26,13 +26,28 @@ function renderCalendar(){
  items.forEach(event=>{const card=document.createElement('article');card.className='event';const button=document.createElement('button');if(event.sample){const sample=document.createElement('span');sample.className='sample';sample.textContent='表示サンプル';button.append(sample);}const meta=document.createElement('p');meta.className='meta';meta.textContent=`${event.region} / ${event.status}`;const title=document.createElement('h4');title.textContent=event.title+' ↗';const location=document.createElement('p');location.textContent=`開演 ${event.time} · ${event.venue}`;const performers=document.createElement('p');performers.textContent=`出演（自己申告）：${event.performers.join(' / ')||'未登録'}`;button.append(meta,title,location,performers);button.onclick=()=>showDialog(event.title,[event.sample?'表示サンプルです。実在のライブ案内ではありません。':event.description||'ライブの詳細説明はありません。',`${event.date} / 開演 ${event.time} / ${event.status}`,`${event.region} · ${event.venue}`,`出演（自己申告）：${event.performers.join('、')||'未登録'}`],event);card.append(button);$('event-list').append(card);});
 }
 function renderTags(){ $('tags').replaceChildren();tags.forEach(tag=>{const button=document.createElement('button');button.className='tag';button.textContent='#'+tag;button.setAttribute('aria-pressed',String(selectedTags.includes(tag)));button.onclick=()=>{selectedTags=selectedTags.includes(tag)?selectedTags.filter(t=>t!==tag):[...selectedTags,tag];renderTags();};$('tags').append(button);});$('videos').replaceChildren();const results=filterVideos($('demo').checked?videos:publicVideos,selectedTags);if(!results.length)$('videos').append(empty($('demo').checked?'選んだタグをすべて含む動画は見つかりませんでした。':'歌ってみたはまだ掲載されていません','タグを減らすか、後日もう一度ご覧ください。'));results.forEach(video=>{const article=document.createElement('article');article.className='video-card';const art=document.createElement('div');art.className='video-art';const strong=document.createElement('strong');strong.textContent=video.voice;const label=document.createElement('small');label.textContent=video.url?'PUBLIC VIDEO':'VOICE SAMPLE';art.append(strong,label);const body=document.createElement('div');body.className='video-body';if(!video.url){const badge=document.createElement('span');badge.className='sample';badge.textContent='表示サンプル・動画未接続';body.append(badge);}const h=document.createElement(video.url?'a':'h3');h.textContent=video.title;if(video.url){h.href=video.url;h.target='_blank';h.rel='noopener noreferrer';}const p=document.createElement('p');p.textContent=video.tags.map(t=>'#'+t).join(' ');body.append(h,p);article.append(art,body);$('videos').append(article);}); }
+function renderRecruitments(){
+ const list=$('recruitment-list');list.replaceChildren();
+ if(!publicRecruitments.length){list.append(empty('現在公開中の出演者募集はありません。','主催者が公開した募集がここに表示されます。'));return;}
+ for(const item of publicRecruitments){
+  const article=document.createElement('article');article.className='recruitment-card';
+  const meta=document.createElement('p');meta.className='meta';meta.textContent=[item.event_date,item.region].filter(Boolean).join(' · ')||'日程・地域は主催者へ確認';
+  const title=document.createElement('h3');title.textContent=item.title;
+  const organizer=document.createElement('p');organizer.textContent=`主催：${item.organizer}`;
+  const concept=document.createElement('p');concept.textContent=item.concept||'詳しい募集内容は主催者へご確認ください。';
+  const actions=document.createElement('div');actions.className='recruitment-actions';
+  const interest=document.createElement('a');interest.className='primary';interest.href='./account.html#login';interest.textContent='ログインして興味を伝える ↗';actions.append(interest);
+  if(item.organizerX){const x=document.createElement('a');x.className='outline';x.href=item.organizerX;x.target='_blank';x.rel='noopener noreferrer';x.textContent='主催者のXを見る ↗';actions.append(x);}
+  article.append(meta,title,organizer,concept,actions);list.append(article);
+ }
+}
 function moveMonth(delta){const d=new Date(year,month+delta,1);year=d.getFullYear();month=d.getMonth();selected=dateKey(year,month,1);renderCalendar();}
 $('previous').onclick=()=>moveMonth(-1);$('next').onclick=()=>moveMonth(1);$('today').onclick=()=>{year=now.getFullYear();month=now.getMonth();selected=dateKey(year,month,now.getDate());renderCalendar();};$('region').onchange=renderCalendar;$('demo').onchange=()=>{renderCalendar();renderTags();};$('reset-tags').onclick=()=>{selectedTags=[];renderTags();};$('close-dialog').onclick=()=>$('dialog').close();document.querySelectorAll('[data-account]').forEach(button=>button.onclick=()=>{location.href='./account.html';});
 // Keep the preview fixtures upcoming, including at month/year boundaries.
 events.slice(0,2).forEach((event,i)=>{const day=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1+i*2);event.date=dateKey(day.getFullYear(),day.getMonth(),day.getDate());event.sample=true;event.poster=samplePoster(i?960:600,i?540:850,event.title,i?'#253349':'#632a4a');});
 const refreshPosters=mountPosterCarousel({getEvents:()=>$('demo').checked?events:publicEvents,onOpen:event=>{showDialog(event.title,[`${event.date} · ${event.region} · 開演 ${event.time}`,event.sample?'表示サンプルです。実際のポスターは掲載準備中です。':event.description||'ライブの詳細説明はありません。'],event);}});
 $('demo').addEventListener('change',refreshPosters);
-renderCalendar();renderTags();refreshPosters();
+renderCalendar();renderTags();renderRecruitments();refreshPosters();
 function updateRegionOptions(){
  const regions=upcomingRegions($('demo').checked?events:publicEvents);
  const signature=JSON.stringify(regions);
@@ -48,9 +63,9 @@ setInterval(()=>{if(updateRegionOptions())renderCalendar();},30000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&updateRegionOptions())renderCalendar();});
 
 try{
- const data=await loadPublicData(supabase);publicEvents=data.events;publicVideos=data.videos;
+ const data=await loadPublicData(supabase);publicEvents=data.events;publicVideos=data.videos;publicRecruitments=data.recruitments;
  window.oshilinkPublicProfiles=data.profiles;window.dispatchEvent(new CustomEvent('oshilink:artists',{detail:data.profiles}));
  $('data-status').textContent=demoMode?'確認用の表示サンプルを使用できます。':'';
  $('data-banner').hidden=!demoMode;
 }catch(error){$('data-status').textContent='公開情報を読み込めませんでした。再読み込みしてください。';}
-renderCalendar();renderTags();refreshPosters();
+renderCalendar();renderTags();renderRecruitments();refreshPosters();

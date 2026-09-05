@@ -4,6 +4,7 @@ import {buildProfilePayload,saveMyProfiles} from './profile-save.mjs';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
+import {buildRecruitment,saveRecruitment,publishRecruitment} from './matching.mjs';
 const $ = id => document.getElementById(id);
 window.oshilinkSupabase=supabase;
 let sessionLoggedIn=false;
@@ -65,6 +66,7 @@ const roles = () => [...document.querySelectorAll('.role-picker input:checked')]
 let pendingProfiles=null;
 let pendingVideo=null;
 let pendingLive=null;
+let pendingRecruitment=null;
 function selectPanel(panel) {
   document.querySelectorAll('[data-panel]').forEach(button => {
     const selected = button.dataset.panel === panel;
@@ -83,6 +85,7 @@ function syncRoles() {
   const panels = allowedPanels(selected);
   document.querySelector('[data-panel="video"]').disabled = !panels.video;
   document.querySelector('[data-panel="live"]').disabled = !panels.live;
+  document.querySelector('[data-panel="recruitment"]').disabled = !selected.includes('organizer');
   const active = document.querySelector('[data-panel][aria-pressed="true"]');
   if (active.disabled) selectPanel('profile');
   $('role-notice').textContent = selected.length ? '' : '利用タイプを1つ以上選んでください。';
@@ -97,14 +100,16 @@ async function renderManagement(){
   status.textContent='一覧を読み込んでいます…';
   try{
     const content=await loadMyContent(window.oshilinkSupabase);
-    const groups=[['プロフィール','profiles',content.profiles],['歌ってみた','videos',content.videos],['登録したライブ','events',content.events]];
+    const recruitments=await window.oshilinkSupabase.schema('oshilink_v2').from('recruitments').select('id,title,event_date,is_public,is_open').order('created_at',{ascending:false});
+    if(recruitments.error)throw new Error('出演者募集を読み込めませんでした。');
+    const groups=[['プロフィール','profiles',content.profiles],['歌ってみた','videos',content.videos],['登録したライブ','events',content.events],['出演者募集','recruitments',recruitments.data||[]]];
     for(const [title,type,items] of groups){
       const section=document.createElement('section');section.className='management-group';const heading=document.createElement('h3');heading.textContent=title;section.append(heading);
       if(!items.length){const empty=document.createElement('p');empty.className='quiet';empty.textContent='まだありません。';section.append(empty);}
       for(const item of items){
         const row=document.createElement('div');row.className='management-item';const text=document.createElement('p');text.textContent=`${item.display_name||item.title}${item.event_date?'｜'+item.event_date:''}｜${item.is_public?'公開中':'非公開'}`;
-        const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=type==='events'?(item.is_public?'公開済み':'公開する'):(item.is_public?'非公開にする':'公開する');button.disabled=type==='events'&&item.is_public;
-        button.addEventListener('click',async()=>{button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events')await publishMyEvent(window.oshilinkSupabase,item.id);else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();}catch(error){status.textContent=error.message;button.disabled=false;}});
+        const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=['events','recruitments'].includes(type)?(item.is_public?'公開済み':'公開する'):(item.is_public?'非公開にする':'公開する');button.disabled=['events','recruitments'].includes(type)&&item.is_public;
+        button.addEventListener('click',async()=>{button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events')await publishMyEvent(window.oshilinkSupabase,item.id);else if(type==='recruitments')await publishRecruitment(window.oshilinkSupabase,item.id);else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();}catch(error){status.textContent=error.message;button.disabled=false;}});
         row.append(text,button);section.append(row);
       }
       list.append(section);
@@ -125,7 +130,7 @@ voiceTags.forEach(tag => {
     $('posting-tags').querySelectorAll('input').forEach(item => item.disabled = tagDisabled(item.checked, count));
   });
 });
-const labels = { singerName: '活動名', started: '活動開始日', singerRegion: '活動地域', style: 'ライブスタイル', organizerName: '主催者名', brand: 'ライブブランド名', organizerRegion: '開催地域', concept: 'ライブコンセプト', listenerName: 'リスナー名', bio: '紹介文', cover: 'カバー内のメッセージ', x: '公開X URL', lp: '専用LP URL', title: 'タイトル', url: '動画URL', description: '紹介・説明', tag: '歌声タグ', date: '開催日', region: '開催地域', venue: '会場', doors: '開場', time: '開演', status: '開催状態', price: '料金表示', ticket: 'チケットURL' };
+const labels = { singerName: '活動名', started: '活動開始日', singerRegion: '活動地域', style: 'ライブスタイル', organizerName: '主催者名', brand: 'ライブブランド名', organizerRegion: '開催地域', concept: '募集内容・コンセプト', listenerName: 'リスナー名', bio: '紹介文', cover: 'カバー内のメッセージ', x: '公開X URL', lp: '専用LP URL', title: 'タイトル', url: '動画URL', description: '紹介・説明', tag: '歌声タグ', date: '開催日', eventDate:'開催予定日', region: '開催地域', venue: '会場', doors: '開場', time: '開演', status: '開催状態', price: '料金表示', ticket: 'チケットURL' };
 function appendReviewImage(container,source,title,kind){
   if(!source || source.hidden || !source.complete || !source.naturalWidth || !source.src.startsWith('blob:'))return;
   const figure=document.createElement('figure');figure.className='review-image';
@@ -175,6 +180,7 @@ document.querySelectorAll('.studio form').forEach(form => {
       ...Object.fromEntries(new FormData(form)),tag:new FormData(form).getAll('tag')
     }):null;
     pendingLive=form.id==='live-form'?buildLivePost(Object.fromEntries(new FormData(form))):null;
+    pendingRecruitment=form.id==='recruitment-form'?buildRecruitment(Object.fromEntries(new FormData(form))):null;
     if(pendingLive){
       const note=document.createElement('section');note.className='event-candidates';
       const candidates=sessionLoggedIn?await findEventCandidates(window.oshilinkSupabase,pendingLive):[];
@@ -188,9 +194,9 @@ document.querySelectorAll('.studio form').forEach(form => {
       if(candidates.length&&!roles().includes('singer')){note.append(document.createTextNode('主催者プロフィールでは既存ライブへの出演追加はできません。'));note.querySelectorAll('input[value]:not([value=""])').forEach(input=>input.disabled=true);}
       $('review-content').prepend(note);
     }
-    const saveable=Boolean(pendingProfiles||pendingVideo||pendingLive);
+    const saveable=Boolean(pendingProfiles||pendingVideo||pendingLive||pendingRecruitment);
     $('save-review').hidden=!saveable;
-    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?'ライブ情報を保存':'プロフィールを保存';
+    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?'ライブ情報を保存':pendingRecruitment?'出演者募集を保存':'プロフィールを保存';
     $('save-review').disabled=!saveable || !sessionLoggedIn;
     $('save-review-status').hidden=!saveable;
     $('save-review-status').dataset.state='';
@@ -223,13 +229,14 @@ $('save-review').addEventListener('click',async()=>{
     if(pendingProfiles)await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
     else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);}
-    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':'プロフィールを保存しました。公開状態は変更していません。';
+    else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
+    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールを保存しました。公開状態は変更していません。';
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
     button.disabled=false;
   }
 });
 $('review-dialog').addEventListener('close',()=>{
-  $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;$('save-review').disabled=true;
+  $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;pendingRecruitment=null;$('save-review').disabled=true;
 });
 syncRoles();

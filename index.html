@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="歌い手のプロフィール、歌ってみた、ライブ情報をまとめて探せるOshiLink。">
-  <title>OshiLink｜歌い手とライブを探す</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./performer-links.css">
+  <title>OshiLink｜歌い手とライブを探す</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./performer-links.css"><link rel="stylesheet" href="./recruitment.css">
 </head>
 <body>
 <a class="skip" href="#main">本文へ</a>
@@ -21,12 +21,12 @@
 </section>
 <section class="section wrap" id="voices"><div class="section-heading"><div><p class="eyebrow">DISCOVER YOUR FAVORITE VOICE</p><h2>好きな歌声から探す</h2><p>選んだタグをすべて含む歌ってみたを表示します。</p></div><button id="reset-tags" class="text-link">タグをすべて外す ↗</button></div><div id="tags" class="tags" aria-label="歌声タグ"></div><div id="videos" class="video-grid" aria-live="polite"></div><p class="quiet">タグは投稿者が選んだ歌声・歌い方の特徴です。</p></section>
 <section class="section wrap" id="singers"><div class="section-heading"><div><p class="eyebrow">ARTISTS</p><h2>気になる歌い手を見つけよう</h2></div><div class="artist-controls"><button id="artist-prev" aria-label="前の歌い手を表示">←</button><button id="artist-next" aria-label="次の歌い手を表示">→</button><button id="artist-pause">一時停止</button></div></div><p class="artist-caption" id="artist-description">※ランダムに最大6人紹介しています。</p><div class="artist-rail" id="artist-rail" aria-label="歌い手プロフィール一覧"></div><p class="artist-caption">アイコンを押すと、公開プロフィールを確認できます。</p><button class="outline" id="artist-all" aria-expanded="false" aria-controls="artist-rail">すべての歌い手を見る ↗</button></section>
-<section class="section wrap" id="recruit"><div class="recruit"><div><p class="eyebrow">TAKE YOUR NEXT STAGE</p><h2>あなたに合う<br>ステージを探そう。</h2><p>コンセプトや開催地域から、<br>気になる出演者募集をチェック。</p></div><div class="recruit-info"><span class="pill">出演者募集 · 掲載準備中</span><h3>つながるきっかけは、<br>「出演に興味あり」から。</h3><p>具体的な相談はXへ。<br>サイト内のチャットや決済はありません。</p></div></div></section>
+<section class="section wrap" id="recruit"><div class="recruit"><div><p class="eyebrow">TAKE YOUR NEXT STAGE</p><h2>あなたに合う<br>ステージを探そう。</h2><p>コンセプトや開催地域から、<br>気になる出演者募集をチェック。</p></div><div class="recruit-info"><span class="pill">出演者募集</span><h3>つながるきっかけは、<br>「出演に興味あり」から。</h3><p>具体的な相談はXへ。<br>サイト内のチャットや決済はありません。</p></div></div><div id="recruitment-list" class="recruitment-list" aria-live="polite"></div></section>
 <section class="join wrap"><p class="eyebrow">FOR SINGERS & ORGANIZERS</p><h2>あなたの活動を、<br class="mobile-only">見つけてもらおう。</h2><p>プロフィールや動画、ライブ情報を掲載できます。<br>歌い手・主催者・リスナーは、ひとつのアカウントで兼任できます。</p><button class="primary" data-account>登録する <span>↗</span></button></section>
 </main>
 <footer class="wrap"><a class="brand" href="#">Oshi<span>Link</span></a><p>歌い手と、ライブと、あなたをつなぐ。</p><a href="mailto:d.oshilink@gmail.com">ご要望・お問い合わせ ↗</a><small>公開情報のみを表示します。</small></footer>
 <nav class="bottom-nav" aria-label="スマートフォンメニュー"><a href="#">ホーム</a><a href="#calendar">カレンダー</a><a href="#voices">探す</a><button data-account>マイページ</button></nav>
 <dialog id="dialog"><button id="close-dialog" class="dialog-close" aria-label="閉じる">×</button><div id="dialog-content"></div></dialog>
-<script type="module" src="./app.mjs?v=release-2"></script>
+<script type="module" src="./app.mjs?v=matching-1"></script>
 <script type="module" src="./artists.mjs?v=release-2"></script>
 </body></html>
