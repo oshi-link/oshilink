@@ -13,18 +13,15 @@
   <p class="eyebrow">WELCOME TO OSHILINK</p>
   <h1>登録を完了して、<br>あなたのページへ。</h1>
   <p id="verification-status" role="status">メール確認状態を確認しています…</p>
+  <p>名前・画像・活動情報は、登録完了後にマイページで一度だけまとめて設定できます。</p>
   <form id="complete-form">
     <label class="field" for="complete-age">年齢区分<select id="complete-age" required><option value="">選択してください</option><option value="teen">13〜17歳</option><option value="adult">18歳以上</option></select></label>
     <label id="complete-guardian-field" class="consent" hidden><input id="complete-guardian" type="checkbox">保護者の同意を得ています</label>
-    <fieldset class="role-complete"><legend>利用タイプ（複数選択できます）</legend>
-      <label><input type="checkbox" value="singer">歌い手</label><label><input type="checkbox" value="organizer">主催者</label><label><input type="checkbox" value="listener">リスナー</label>
-    </fieldset>
-    <div id="initial-names"></div>
     <label class="consent"><input id="complete-terms" type="checkbox" required>利用規約・プライバシー案内の内容に同意します</label>
     <button id="complete-submit" class="primary" type="submit" disabled>登録を完了する</button>
     <p id="complete-status" class="quiet" role="status" aria-live="polite"></p>
   </form>
 </main>
-<script type="module" src="./register-complete-page.mjs"></script>
+<script type="module" src="./register-complete-page.mjs?v=profile-once-1"></script>
 </body>
 </html>

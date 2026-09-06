@@ -2,7 +2,7 @@ import {dateKey,monthCells,filterVideos,upcomingRegions} from './calendar.mjs?v=
 import {samplePoster,mountPosterCarousel} from './posters.mjs';
 import {supabase} from './supabase-client.mjs';
 import {loadPublicData} from './public-data.mjs';
-import {savedEventState,toggleSavedEvent} from './saved-content.mjs';
+import {savedEventState,toggleSavedEvent,loadFavoriteProfileIds,prioritizeFavoriteProfiles} from './saved-content.mjs';
 import {sendRecruitmentInterest} from './matching.mjs';
 const $=id=>document.getElementById(id);
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
@@ -44,7 +44,13 @@ function renderRecruitments(){
  }
 }
 function moveMonth(delta){const d=new Date(year,month+delta,1);year=d.getFullYear();month=d.getMonth();selected=dateKey(year,month,1);renderCalendar();}
-$('previous').onclick=()=>moveMonth(-1);$('next').onclick=()=>moveMonth(1);$('today').onclick=()=>{year=now.getFullYear();month=now.getMonth();selected=dateKey(year,month,now.getDate());renderCalendar();};$('region').onchange=renderCalendar;$('demo').onchange=()=>{renderCalendar();renderTags();};$('reset-tags').onclick=()=>{selectedTags=[];renderTags();};$('close-dialog').onclick=()=>$('dialog').close();document.querySelectorAll('[data-account]').forEach(button=>button.onclick=()=>{location.href='./account.html';});
+$('previous').onclick=()=>moveMonth(-1);$('next').onclick=()=>moveMonth(1);$('today').onclick=()=>{year=now.getFullYear();month=now.getMonth();selected=dateKey(year,month,now.getDate());renderCalendar();};$('region').onchange=renderCalendar;$('demo').onchange=()=>{renderCalendar();renderTags();};$('reset-tags').onclick=()=>{selectedTags=[];renderTags();};$('close-dialog').onclick=()=>$('dialog').close();
+async function syncAccountButtons(){
+ const {data:{session}}=await supabase.auth.getSession();const loggedIn=Boolean(session?.user);
+ document.querySelectorAll('[data-account]').forEach(button=>{button.textContent=loggedIn?'マイページ':'ログイン / 登録';button.onclick=()=>{location.href=loggedIn?'./mypage.html':'./account.html';};});
+ return loggedIn;
+}
+await syncAccountButtons();supabase.auth.onAuthStateChange(()=>{syncAccountButtons();});
 // Keep the preview fixtures upcoming, including at month/year boundaries.
 events.slice(0,2).forEach((event,i)=>{const day=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1+i*2);event.date=dateKey(day.getFullYear(),day.getMonth(),day.getDate());event.sample=true;event.poster=samplePoster(i?960:600,i?540:850,event.title,i?'#253349':'#632a4a');});
 const refreshPosters=mountPosterCarousel({getEvents:()=>$('demo').checked?events:publicEvents,onOpen:event=>{showDialog(event.title,[`${event.date} · ${event.region} · 開演 ${event.time}`,event.sample?'表示サンプルです。実際のポスターは掲載準備中です。':event.description||'ライブの詳細説明はありません。'],event);}});
@@ -66,7 +72,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&updateReg
 
 try{
  const data=await loadPublicData(supabase);publicEvents=data.events;publicVideos=data.videos;publicRecruitments=data.recruitments;
- window.oshilinkPublicProfiles=data.profiles;window.dispatchEvent(new CustomEvent('oshilink:artists',{detail:data.profiles}));
+ const favoriteIds=await loadFavoriteProfileIds(supabase).catch(()=>[]),orderedProfiles=prioritizeFavoriteProfiles(data.profiles,favoriteIds);
+ window.oshilinkPublicProfiles=orderedProfiles;window.dispatchEvent(new CustomEvent('oshilink:artists',{detail:orderedProfiles}));
  $('data-status').textContent=demoMode?'確認用の表示サンプルを使用できます。':'';
  $('data-banner').hidden=!demoMode;
 }catch(error){$('data-status').textContent='公開情報を読み込めませんでした。再読み込みしてください。';}

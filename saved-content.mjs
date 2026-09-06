@@ -36,6 +36,21 @@ export function toggleFavorite(client,profileId){
   return toggleRow(client,{table:'favorites',column:'profile_id',id:profileId});
 }
 
+export async function loadFavoriteProfileIds(client){
+  const {data:{session},error:sessionError}=await client.auth.getSession();
+  if(sessionError||!session?.user?.id)return [];
+  const {data,error}=await client.schema('oshilink_v2').from('favorites').select('profile_id').eq('user_id',session.user.id);
+  if(error)throw new Error('お気に入り情報を読み込めませんでした。',{cause:error});
+  return (data||[]).map(row=>row.profile_id).filter(id=>uuid.test(id));
+}
+
+export function prioritizeFavoriteProfiles(profiles,favoriteIds,random=Math.random){
+  const favorites=new Set(favoriteIds||[]);
+  return [...(profiles||[])].map((profile,index)=>({profile,index,score:random()})).sort((a,b)=>
+    Number(favorites.has(b.profile.id))-Number(favorites.has(a.profile.id))||a.score-b.score||a.index-b.index
+  ).map(item=>item.profile);
+}
+
 export async function savedEventState(client,eventId){
   if(!uuid.test(eventId||''))return false;
   const user=await currentUser(client);
