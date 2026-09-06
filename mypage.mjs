@@ -1,7 +1,7 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
-import {bindImagePreview} from './local-image-preview.mjs?v=drag-1';
+import {bindImagePreview} from './local-image-preview.mjs?v=crop-dialog-1';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
-import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=drag-1';
+import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
@@ -60,15 +60,11 @@ for(const section of document.querySelectorAll('[data-role]')){
     const frame=document.createElement('div');frame.className=`local-image-frame local-image-${kind}`;
     const placeholder=document.createElement('span');placeholder.textContent='画像未設定';
     const image=document.createElement('img');image.alt=`選択した${title}のプレビュー`;image.hidden=true;frame.append(placeholder,image);
-    const controls=document.createElement('div');controls.className='image-position-controls';
-    const makeRange=(text,min,max,step,value)=>{const label=document.createElement('label');label.textContent=text;const range=document.createElement('input');range.type='range';range.min=min;range.max=max;range.step=step;range.value=value;range.disabled=true;label.append(range);controls.append(label);return range;};
-    const zoom=makeRange('拡大・縮小','1','3','.05','1');
-    const dragHelp=document.createElement('p');dragHelp.className='image-drag-help';dragHelp.textContent='画像を直接ドラッグして位置を調整';controls.append(dragHelp);
     const remove=document.createElement('button');remove.type='button';remove.className='outline';remove.textContent=`${title}の選択を解除`;remove.disabled=true;
     const notice=document.createElement('p');notice.className='quiet';notice.id=`${role}-${kind}-notice`;notice.setAttribute('role','status');input.setAttribute('aria-describedby',notice.id);
     const note=document.createElement('p');note.className='quiet';note.textContent=kind==='avatar'?'丸い枠に合わせて表示します。画像の端が隠れる場合があります。':'Xで使っているヘッダー画像をそのまま選べます。別の比率の画像も使えますが、余白が入る場合があります。';
-    block.append(label,frame,controls,note,remove,notice);editor.append(block);
-    imageResets.push(bindImagePreview({input,image,frame,notice,remove,placeholder,zoom}));
+    block.append(label,frame,note,remove,notice);editor.append(block);
+    imageResets.push(bindImagePreview({input,image,frame,notice,remove,placeholder,kind,title}));
   }
   section.append(editor);
 }
