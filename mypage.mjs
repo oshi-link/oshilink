@@ -1,7 +1,7 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
 import {bindImagePreview} from './local-image-preview.mjs';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
-import {saveSelectedProfileImages} from './profile-images.mjs?v=save-1';
+import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
@@ -21,7 +21,7 @@ async function syncSession(){
   sessionLoggedIn=loggedIn;
   $('session-banner').textContent=loggedIn?'マイページ · ログイン中':'マイページ · 未ログイン';
   $('session-status').textContent=loggedIn
-    ? 'ログイン済みです。プロフィールを非公開状態で保存できます。'
+    ? 'ログイン済みです。新しいプロフィールは公開状態で保存されます。'
     : 'プロフィールの確認はできます。保存するにはログインしてください。';
   $('login-link').hidden=loggedIn;
   $('logout-button').hidden=!loggedIn;
@@ -60,11 +60,14 @@ for(const section of document.querySelectorAll('[data-role]')){
     const frame=document.createElement('div');frame.className=`local-image-frame local-image-${kind}`;
     const placeholder=document.createElement('span');placeholder.textContent='画像未設定';
     const image=document.createElement('img');image.alt=`選択した${title}のプレビュー`;image.hidden=true;frame.append(placeholder,image);
+    const controls=document.createElement('div');controls.className='image-position-controls';
+    const makeRange=(text,min,max,step,value)=>{const label=document.createElement('label');label.textContent=text;const range=document.createElement('input');range.type='range';range.min=min;range.max=max;range.step=step;range.value=value;range.disabled=true;label.append(range);controls.append(label);return range;};
+    const zoom=makeRange('拡大・縮小','1','3','.05','1'),horizontal=makeRange('左右の位置','0','100','1','50'),vertical=makeRange('上下の位置','0','100','1','50');
     const remove=document.createElement('button');remove.type='button';remove.className='outline';remove.textContent=`${title}の選択を解除`;remove.disabled=true;
     const notice=document.createElement('p');notice.className='quiet';notice.id=`${role}-${kind}-notice`;notice.setAttribute('role','status');input.setAttribute('aria-describedby',notice.id);
     const note=document.createElement('p');note.className='quiet';note.textContent=kind==='avatar'?'丸い枠に合わせて表示します。画像の端が隠れる場合があります。':'Xで使っているヘッダー画像をそのまま選べます。別の比率の画像も使えますが、余白が入る場合があります。';
-    block.append(label,frame,note,remove,notice);editor.append(block);
-    imageResets.push(bindImagePreview({input,image,notice,remove,placeholder}));
+    block.append(label,frame,controls,note,remove,notice);editor.append(block);
+    imageResets.push(bindImagePreview({input,image,notice,remove,placeholder,zoom,horizontal,vertical}));
   }
   section.append(editor);
 }
@@ -110,7 +113,8 @@ async function restoreSavedProfiles(){
       if(field){field.value=value;field.setCustomValidity?.('');}
     }
     syncRoles();
-    $('session-status').textContent='ログイン済みです。保存済みのプロフィールを読み込みました。';
+    await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);
+    $('session-status').textContent='ログイン済みです。保存済みのプロフィールと画像を読み込みました。';
   }catch(error){
     $('session-status').textContent=error.message;
   }
@@ -288,11 +292,11 @@ $('save-review').addEventListener('click',async()=>{
   const button=$('save-review'),status=$('save-review-status');
   button.disabled=true;status.dataset.state='';status.textContent='保存しています…';
   try{
-    if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),await loadMyProfiles(window.oshilinkSupabase));}
+    if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);const profiles=await loadMyProfiles(window.oshilinkSupabase);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
     else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
-    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールを保存しました。公開状態は変更していません。';
+    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールと画像を保存しました。新しいプロフィールは公開されます。';
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
     button.disabled=false;
