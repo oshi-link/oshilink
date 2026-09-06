@@ -1,4 +1,4 @@
-import {prepareSelectedImage} from './local-image-preview.mjs?v=crop-dialog-1';
+import {prepareSelectedImage} from './local-image-preview.mjs?v=crop-dialog-2';
 import {loadPublicImageUrls} from './public-images.mjs';
 
 export async function saveSelectedProfileImages(client,form,profiles){
