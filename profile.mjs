@@ -33,7 +33,8 @@ if(/^[0-9a-f-]{36}$/i.test(realId||'')){
     document.querySelector('.identity h1').textContent=profile.display_name;
     document.querySelector('.identity-copy > p:last-child').textContent=profile.bio||'紹介文はまだ登録されていません。';
     document.querySelector('.identity .sample')?.remove();
-    document.querySelector('.avatar').firstChild.textContent=profile.display_name.slice(0,1);
+    const avatar=document.querySelector('.avatar');avatar.replaceChildren();if(profile.avatar){const image=document.createElement('img');image.src=profile.avatar;image.alt=`${profile.display_name}のプロフィール画像`;avatar.append(image);}else avatar.textContent=profile.display_name.slice(0,1);
+    const cover=document.querySelector('.profile-cover');if(profile.cover){cover.style.backgroundImage=`linear-gradient(90deg,rgba(13,12,18,.35),rgba(13,12,18,.35)),url("${profile.cover.replaceAll('"','%22')}")`;cover.classList.add('has-image');cover.querySelector('small').hidden=true;}
     $('cover-message').textContent=profile.cover_message||'';$('cover-message').hidden=!profile.cover_message;
     const followArea=document.querySelector('.follow-area'),followButton=$('follow'),followHelp=followArea.querySelector('small');followArea.hidden=false;followHelp.textContent='推し登録は自分だけに表示されます。';
     try{const active=await favoriteState(supabase,profile.id);followButton.setAttribute('aria-pressed',String(active));followButton.textContent=active?'♥ 推し登録済み':'♡ 推し登録';}catch{followButton.setAttribute('aria-pressed','false');followButton.textContent='♡ 推し登録';}
