@@ -1,3 +1,4 @@
+import {loadPublicImageUrls} from './public-images.mjs';
 const stateLabels={scheduled:'開催予定',postponed:'延期',cancelled:'中止'};
 export async function loadPublicData(client){
   if(!client?.schema)throw new TypeError('Supabase接続が必要です。');
@@ -18,7 +19,10 @@ export async function loadPublicData(client){
   for(const performance of performancesResult.data||[]){const profile=profileById.get(performance.profile_id);if(profile){const list=performersByEvent.get(performance.event_id)||[];list.push({id:profile.id,name:profile.display_name});performersByEvent.set(performance.event_id,list);}}
   const labelById=new Map((tagsResult.data||[]).map(tag=>[tag.id,tag.label])),tagsByVideo=new Map();
   for(const row of videoTagsResult.data||[]){if(labelById.has(row.tag_id)){const list=tagsByVideo.get(row.video_id)||[];list.push(labelById.get(row.tag_id));tagsByVideo.set(row.video_id,list);}}
-  const events=(eventsResult.data||[]).map(event=>({id:event.id,title:event.title,date:event.event_date,region:event.region,time:String(event.starts).slice(0,5),venue:event.venue,status:stateLabels[event.state]||event.state,performers:(performersByEvent.get(event.id)||[]).map(p=>p.name),performerLinks:performersByEvent.get(event.id)||[],description:event.description,price:event.price_text,ticket:event.ticket_url,public:true,poster:null}));
+  const imageItems=[...allProfiles.flatMap(profile=>[{id:profile.id,kind:'avatar'},{id:profile.id,kind:'cover'}]),...(eventsResult.data||[]).map(event=>({id:event.id,kind:'flyer'}))];
+  const imageUrls=await loadPublicImageUrls(client,imageItems);
+  allProfiles.forEach(profile=>{profile.avatar=imageUrls[`avatar:${profile.id}`]||null;profile.cover=imageUrls[`cover:${profile.id}`]||null;});
+  const events=(eventsResult.data||[]).map(event=>({id:event.id,title:event.title,date:event.event_date,region:event.region,time:String(event.starts).slice(0,5),venue:event.venue,status:stateLabels[event.state]||event.state,performers:(performersByEvent.get(event.id)||[]).map(p=>p.name),performerLinks:performersByEvent.get(event.id)||[],description:event.description,price:event.price_text,ticket:event.ticket_url,public:true,poster:imageUrls[`flyer:${event.id}`]||null}));
   const videos=(videosResult.data||[]).filter(video=>profileById.has(video.profile_id)).map(video=>({id:video.id,title:video.title,url:video.video_url,description:video.description,voice:profileById.get(video.profile_id).display_name,profileId:video.profile_id,tags:tagsByVideo.get(video.id)||[]}));
   const recruitments=(recruitmentsResult.data||[]).map(item=>({
     ...item,organizer:profileById.get(item.organizer_profile_id)?.display_name||'主催者情報なし',
