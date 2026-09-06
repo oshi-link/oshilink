@@ -30,8 +30,7 @@ $('logout-button').addEventListener('click',async()=>{
     $('logout-button').disabled=false;
     return;
   }
-  await syncSession();
-  $('logout-button').disabled=false;
+  location.assign('./index.html');
 });
 
 await syncSession();
