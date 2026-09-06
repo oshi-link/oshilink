@@ -1,4 +1,4 @@
-import {prepareSelectedImage} from './local-image-preview.mjs';
+import {prepareSelectedImage} from './local-image-preview.mjs?v=drag-1';
 import {loadPublicImageUrls} from './public-images.mjs';
 
 export async function saveSelectedProfileImages(client,form,profiles){
