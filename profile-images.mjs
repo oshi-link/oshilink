@@ -1,4 +1,4 @@
-import {prepareSelectedImage} from './local-image-preview.mjs?v=drag-1';
+import {prepareSelectedImage} from './local-image-preview.mjs?v=crop-dialog-1';
 import {loadPublicImageUrls} from './public-images.mjs';
 
 export async function saveSelectedProfileImages(client,form,profiles){
@@ -13,6 +13,7 @@ export async function saveSelectedProfileImages(client,form,profiles){
     const input=form.querySelector(`#${role}-${kind}-input`),file=input?.files?.[0];
     if(!file)continue;
     const prepared=await prepareSelectedImage(input,kind);
+    if(!prepared)continue;
     const body=new FormData();body.set('file',prepared);body.set('targetId',targetId);body.set('kind',kind);body.set('expectedPath',current.get(`${targetId}:${kind}`)||'');
     const result=await client.functions.invoke('store-profile-image',{body});
     if(result.error||result.data?.saved!==true)throw new Error('画像を保存できませんでした。5MB以下のJPEG・PNG・WebPをお試しください。');
