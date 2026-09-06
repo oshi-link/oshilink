@@ -1,7 +1,7 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
-import {bindImagePreview} from './local-image-preview.mjs?v=crop-dialog-1';
+import {bindImagePreview} from './local-image-preview.mjs?v=crop-dialog-2';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
-import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-1';
+import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-2';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
