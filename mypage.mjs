@@ -100,7 +100,7 @@ async function restoreSavedProfiles(){
     document.querySelectorAll('.role-picker input').forEach(input=>{input.checked=restored.kinds.includes(input.value);});
     for(const [name,value] of Object.entries(restored.values)){
       const field=$('profile-form').elements.namedItem(name);
-      if(field)field.value=value;
+      if(field){field.value=value;field.setCustomValidity?.('');}
     }
     syncRoles();
     $('session-status').textContent='ログイン済みです。保存済みのプロフィールを読み込みました。';
