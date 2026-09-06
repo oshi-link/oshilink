@@ -38,7 +38,7 @@ export async function loadMyProfiles(client){
   const {data:authData,error:authError}=await client.auth.getUser();
   if(authError || !authData?.user)throw new Error('ログインが必要です。',{cause:authError});
   const {data,error}=await client.schema('oshilink_v2').from('profiles')
-    .select('kind,display_name,bio,cover_message,region,style,started_on,brand,concept,x_url,lp_url')
+    .select('id,kind,display_name,bio,cover_message,region,style,started_on,brand,concept,x_url,lp_url')
     .eq('owner_id',authData.user.id);
   if(error)throw new Error('保存済みのプロフィールを読み込めませんでした。',{cause:error});
   return data||[];
