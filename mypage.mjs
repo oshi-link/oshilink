@@ -8,6 +8,11 @@ import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboar
 const $ = id => document.getElementById(id);
 window.oshilinkSupabase=supabase;
 let sessionLoggedIn=false;
+let logoutRequested=false;
+const goHomeAfterLogout=()=>location.replace(new URL('./index.html',location.href).href);
+supabase.auth.onAuthStateChange(event=>{
+  if(event==='SIGNED_OUT'&&logoutRequested)setTimeout(goHomeAfterLogout,0);
+});
 
 async function syncSession(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -24,13 +29,15 @@ async function syncSession(){
 
 $('logout-button').addEventListener('click',async()=>{
   $('logout-button').disabled=true;
+  logoutRequested=true;
   const {error}=await supabase.auth.signOut();
   if(error){
+    logoutRequested=false;
     $('session-status').textContent='ログアウトできませんでした。通信状況をご確認ください。';
     $('logout-button').disabled=false;
     return;
   }
-  location.assign('./index.html');
+  goHomeAfterLogout();
 });
 
 await syncSession();
