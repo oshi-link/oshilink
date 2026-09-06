@@ -4,7 +4,7 @@ import {buildProfilePayload,saveMyProfiles} from './profile-save.mjs';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
-import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead} from './matching.mjs';
+import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead,cancelInterest} from './matching.mjs';
 const $ = id => document.getElementById(id);
 window.oshilinkSupabase=supabase;
 let sessionLoggedIn=false;
@@ -95,7 +95,7 @@ document.querySelectorAll('.role-picker input').forEach(input => input.addEventL
 document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {selectPanel(button.dataset.panel);if(button.dataset.panel==='manage')renderManagement();if(button.dataset.panel==='matching')renderMatching();}));
 
 async function renderMatching(){
-  const status=$('matching-status'),profiles=$('matching-profiles'),notifications=$('notification-list');profiles.replaceChildren();notifications.replaceChildren();
+  const status=$('matching-status'),profiles=$('matching-profiles'),notifications=$('notification-list'),sentList=$('sent-interest-list');profiles.replaceChildren();notifications.replaceChildren();sentList.replaceChildren();
   if(!sessionLoggedIn){status.textContent='受付設定と通知を見るにはログインしてください。';return;}
   status.textContent='マッチング情報を読み込んでいます…';
   try{
@@ -118,6 +118,14 @@ async function renderMatching(){
       else if(item.senderX){const link=document.createElement('a');link.className='primary';link.href=item.senderX;link.target='_blank';link.rel='noopener noreferrer';link.textContent='相手のXを開く ↗';article.append(link);}
       if(!item.read_at){const read=document.createElement('button');read.type='button';read.className='text-link';read.textContent='既読にする';read.onclick=async()=>{read.disabled=true;try{await markNotificationRead(window.oshilinkSupabase,item.id);await renderMatching();}catch(error){status.textContent=error.message;read.disabled=false;}};article.append(read);}
       notifications.append(article);
+    }
+    if(!data.sent.length)sentList.append(Object.assign(document.createElement('p'),{className:'quiet',textContent:'送信済みの興味・出演相談はありません。'}));
+    for(const item of data.sent){
+      const article=document.createElement('article');article.className='notification-card';
+      const title=document.createElement('h4');title.textContent=item.direction==='singer_to_recruitment'?`${item.targetName}へ興味を送信`:`${item.targetName}へ出演相談を送信`;
+      const meta=document.createElement('p');meta.className='quiet';meta.textContent=`${new Date(item.created_at).toLocaleString('ja-JP')}｜${item.state==='active'?'送信中':'取消済み'}`;article.append(title,meta);
+      if(item.state==='active'){const cancel=document.createElement('button');cancel.type='button';cancel.className='outline';cancel.textContent='取り消す';cancel.onclick=async()=>{cancel.disabled=true;status.textContent='取り消しています…';try{await cancelInterest(window.oshilinkSupabase,item.id);await renderMatching();}catch(error){status.textContent=error.message;cancel.disabled=false;}};article.append(cancel);}
+      sentList.append(article);
     }
     status.textContent='出演決定ではありません。具体的な確認や相談はXのDMで行ってください。';
   }catch(error){status.textContent=error.message;}

@@ -1,6 +1,7 @@
 import {supabase} from './supabase-client.mjs';
 import {loadPublicData} from './public-data.mjs';
 import {favoriteState,toggleFavorite} from './saved-content.mjs';
+import {sendProfileInterest} from './matching.mjs';
 const $=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
 const requestedArtist=params.get('artist');
@@ -41,7 +42,14 @@ if(/^[0-9a-f-]{36}$/i.test(realId||'')){
     const bio=document.createElement('p');bio.textContent=profile.bio||'紹介文はまだ登録されていません。';about.querySelector('h2').after(bio);
     const dl=about.querySelector('dl');dl.replaceChildren();for(const [term,value] of [['活動地域',profile.region||'未登録'],['ライブスタイル',profile.style||'未登録']]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=term;dd.textContent=value;dl.append(dt,dd);}
     const xButton=about.querySelector('button[data-preview]');if(profile.x_url){const link=document.createElement('a');link.className='outline full';link.href=profile.x_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Xプロフィールを見る ↗';xButton.replaceWith(link);}else xButton.hidden=true;
-    document.querySelector('.consultation').hidden=true;
+    const consultation=document.querySelector('.consultation');
+    if(profile.matching_open&&profile.x_url){
+      consultation.hidden=false;
+      const consultButton=consultation.querySelector('button');
+      const consultStatus=document.createElement('p');consultStatus.className='quiet';consultStatus.setAttribute('role','status');consultation.append(consultStatus);
+      consultButton.removeAttribute('data-preview');consultButton.textContent='出演相談に興味あり';
+      consultButton.onclick=async()=>{consultButton.disabled=true;consultStatus.textContent='送信しています…';try{await sendProfileInterest(supabase,profile.id);consultButton.textContent='送信済み';consultStatus.textContent='歌い手へ通知しました。具体的な相談はXのDMで行ってください。';}catch(error){consultStatus.textContent=error.message;consultButton.disabled=false;}};
+    }else consultation.hidden=true;
     const videoWrap=document.querySelector('.profile-videos');videoWrap.replaceChildren();for(const video of data.videos.filter(item=>item.profileId===profile.id)){const article=document.createElement('article');article.className='video-card';const link=document.createElement('a');link.href=video.url;link.target='_blank';link.rel='noopener noreferrer';link.className='sample-video';link.textContent='▷ '+video.title;const body=document.createElement('div');body.className='video-body';const tags=document.createElement('p');tags.textContent=video.tags.map(tag=>'#'+tag).join(' ');body.append(tags);article.append(link,body);videoWrap.append(article);}if(!videoWrap.childElementCount)videoWrap.textContent='公開中の歌ってみたはまだありません。';
     const live=$('live');live.querySelectorAll('.profile-event').forEach(node=>node.remove());for(const event of data.events.filter(item=>item.performerLinks.some(p=>p.id===profile.id))){const article=document.createElement('article');article.className='profile-event';const body=document.createElement('div'),title=document.createElement('h3'),meta=document.createElement('p');title.textContent=event.title;meta.textContent=`${event.date} · ${event.region} · ${event.venue} · 開演 ${event.time}`;body.append(title,meta);article.append(body);live.append(article);}if(!live.querySelector('.profile-event')){const empty=document.createElement('p');empty.textContent='公開中の出演予定はまだありません。';live.append(empty);}
     if(profile.lp_url){const link=document.createElement('a');link.className='primary';link.href=profile.lp_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='サービス・ご依頼案内を見る ↗';$('services').querySelector('button')?.replaceWith(link);}else{$('services').hidden=true;$('service-nav').hidden=true;}
