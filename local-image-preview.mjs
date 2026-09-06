@@ -4,18 +4,35 @@ export function validPreviewFile(file) {
     && file.size > 0 && file.size <= 5*1024*1024;
 }
 const editors=new WeakMap();
-export function bindImagePreview({input,image,notice,remove,placeholder,zoom,horizontal,vertical}) {
+const clamp=value=>Math.max(0,Math.min(1,value));
+export function draggedPosition(startX,startY,deltaX,deltaY,width,height){
+  return {x:clamp(startX-deltaX/Math.max(width,1)),y:clamp(startY-deltaY/Math.max(height,1))};
+}
+export function bindImagePreview({input,image,frame,notice,remove,placeholder,zoom}) {
   let url=null,version=0;
-  const controls=[zoom,horizontal,vertical].filter(Boolean);
-  const applyPosition=()=>{image.style.objectFit='cover';image.style.objectPosition=`${horizontal?.value||50}% ${vertical?.value||50}%`;image.style.transform=`scale(${zoom?.value||1})`;};
+  const controls=[zoom].filter(Boolean),position={x:.5,y:.5};
+  const applyPosition=()=>{const point=`${position.x*100}% ${position.y*100}%`;image.style.objectFit='cover';image.style.objectPosition=point;image.style.transformOrigin=point;image.style.transform=`scale(${zoom?.value||1})`;};
   controls.forEach(control=>control.addEventListener('input',applyPosition));
-  editors.set(input,{image,zoom,horizontal,vertical});
+  editors.set(input,{image,zoom,position});
+  let drag=null;
+  frame.addEventListener('pointerdown',event=>{
+    if(image.hidden||!input.files?.[0])return;
+    drag={pointerId:event.pointerId,left:event.clientX,top:event.clientY,x:position.x,y:position.y};
+    frame.setPointerCapture?.(event.pointerId);frame.classList.add('is-dragging');event.preventDefault();
+  });
+  frame.addEventListener('pointermove',event=>{
+    if(!drag||drag.pointerId!==event.pointerId)return;
+    const next=draggedPosition(drag.x,drag.y,event.clientX-drag.left,event.clientY-drag.top,frame.clientWidth,frame.clientHeight);
+    position.x=next.x;position.y=next.y;applyPosition();event.preventDefault();
+  });
+  const endDrag=event=>{if(!drag||drag.pointerId!==event.pointerId)return;drag=null;frame.classList.remove('is-dragging');};
+  frame.addEventListener('pointerup',endDrag);frame.addEventListener('pointercancel',endDrag);
   function reset(){
     version++;
     if(url)URL.revokeObjectURL(url);
     url=null;image.removeAttribute('src');image.hidden=true;
     placeholder.hidden=false;remove.disabled=true;input.value='';notice.textContent='';
-    if(zoom)zoom.value='1';if(horizontal)horizontal.value='50';if(vertical)vertical.value='50';controls.forEach(control=>control.disabled=true);applyPosition();
+    position.x=.5;position.y=.5;if(zoom)zoom.value='1';controls.forEach(control=>control.disabled=true);applyPosition();
   }
   input.addEventListener('change',async()=>{
     const file=input.files[0];
@@ -31,7 +48,7 @@ export function bindImagePreview({input,image,notice,remove,placeholder,zoom,hor
       if(current!==version)return;
       image.hidden=false;placeholder.hidden=true;remove.disabled=false;
       controls.forEach(control=>control.disabled=false);applyPosition();
-      notice.textContent='表示位置を調整できます。プロフィール保存時に、この見え方でアップロードします。';
+      notice.textContent='画像をマウスまたは指で動かし、表示位置を調整できます。';
     }catch{
       if(current!==version)return;
       reset();notice.textContent='画像を読み込めませんでした。別の画像を選んでください。';
@@ -51,7 +68,7 @@ export async function prepareSelectedImage(input,kind){
   const file=input?.files?.[0],editor=editors.get(input);
   if(!file||!editor?.image?.naturalWidth)return file||null;
   const output=kind==='avatar'?{width:800,height:800}:{width:1500,height:500};
-  const image=editor.image,zoom=Number(editor.zoom?.value||1),x=Number(editor.horizontal?.value||50)/100,y=Number(editor.vertical?.value||50)/100;
+  const image=editor.image,zoom=Number(editor.zoom?.value||1),x=editor.position.x,y=editor.position.y;
   const source=cropArea(image.naturalWidth,image.naturalHeight,output.width,output.height,zoom,x,y);
   const canvas=document.createElement('canvas');canvas.width=output.width;canvas.height=output.height;
   canvas.getContext('2d').drawImage(image,source.x,source.y,source.width,source.height,0,0,output.width,output.height);
