@@ -1,5 +1,5 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
-import {bindImagePreview} from './local-image-preview.mjs';
+import {bindImagePreview} from './local-image-preview.mjs?v=drag-1';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
 import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
