@@ -1,6 +1,6 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
 import {bindImagePreview} from './local-image-preview.mjs';
-import {buildProfilePayload,saveMyProfiles} from './profile-save.mjs';
+import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
@@ -90,6 +90,23 @@ function syncRoles() {
   if (active.disabled) selectPanel('profile');
   $('role-notice').textContent = selected.length ? '' : '利用タイプを1つ以上選んでください。';
   $('profile-form').querySelector('[type="submit"]').disabled = !selected.length;
+}
+async function restoreSavedProfiles(){
+  if(!sessionLoggedIn)return;
+  try{
+    const profiles=await loadMyProfiles(window.oshilinkSupabase);
+    if(!profiles.length)return;
+    const restored=profileFormValues(profiles);
+    document.querySelectorAll('.role-picker input').forEach(input=>{input.checked=restored.kinds.includes(input.value);});
+    for(const [name,value] of Object.entries(restored.values)){
+      const field=$('profile-form').elements.namedItem(name);
+      if(field)field.value=value;
+    }
+    syncRoles();
+    $('session-status').textContent='ログイン済みです。保存済みのプロフィールを読み込みました。';
+  }catch(error){
+    $('session-status').textContent=error.message;
+  }
 }
 document.querySelectorAll('.role-picker input').forEach(input => input.addEventListener('change', syncRoles));
 document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {selectPanel(button.dataset.panel);if(button.dataset.panel==='manage')renderManagement();if(button.dataset.panel==='matching')renderMatching();}));
@@ -278,3 +295,4 @@ $('review-dialog').addEventListener('close',()=>{
   $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;pendingRecruitment=null;$('save-review').disabled=true;
 });
 syncRoles();
+await restoreSavedProfiles();
