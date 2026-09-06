@@ -61,4 +61,11 @@
 .management-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #514856; }
 .management-item p { margin: 0; }
 .management-item button { flex: 0 0 auto; min-height: 44px; }
+.matching-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #514856; }
+.matching-row p { margin: 0; }
+.matching-row button { flex: 0 0 auto; min-height: 44px; }
+.notification-card { margin: 14px 0; padding: 18px; border: 1px solid #514856; border-radius: 10px; background: #17171e; }
+.notification-card[data-unread="true"] { border-color: #ef5da9; box-shadow: inset 4px 0 #ab126b; }
+.notification-card h4 { margin: 0; }
+.notification-card .primary { margin-right: 16px; }
 @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; gap: 0; } .studio-nav { gap: 8px; } }

@@ -3,7 +3,7 @@ export async function loadPublicData(client){
   if(!client?.schema)throw new TypeError('Supabase接続が必要です。');
   const db=client.schema('oshilink_v2');
   const [profilesResult,eventsResult,performancesResult,videosResult,tagsResult,videoTagsResult,recruitmentsResult]=await Promise.all([
-    db.from('profiles').select('id,kind,display_name,bio,region,style,cover_message,x_url,lp_url').eq('is_public',true).eq('moderated_hidden',false),
+    db.from('profiles').select('id,kind,display_name,bio,region,style,cover_message,x_url,lp_url,matching_open').eq('is_public',true).eq('moderated_hidden',false),
     db.from('events').select('id,title,event_date,region,venue,starts,state,description,price_text,ticket_url,flyer_path').eq('is_public',true).eq('moderated_hidden',false),
     db.from('performances').select('event_id,profile_id'),
     db.from('videos').select('id,profile_id,title,video_url,description').eq('is_public',true).eq('moderated_hidden',false),
@@ -22,7 +22,8 @@ export async function loadPublicData(client){
   const videos=(videosResult.data||[]).filter(video=>profileById.has(video.profile_id)).map(video=>({id:video.id,title:video.title,url:video.video_url,description:video.description,voice:profileById.get(video.profile_id).display_name,profileId:video.profile_id,tags:tagsByVideo.get(video.id)||[]}));
   const recruitments=(recruitmentsResult.data||[]).map(item=>({
     ...item,organizer:profileById.get(item.organizer_profile_id)?.display_name||'主催者情報なし',
-    organizerX:profileById.get(item.organizer_profile_id)?.x_url||null
+    organizerX:profileById.get(item.organizer_profile_id)?.x_url||null,
+    acceptingInterest:Boolean(profileById.get(item.organizer_profile_id)?.matching_open&&profileById.get(item.organizer_profile_id)?.x_url)
   }));
   return {profiles,events,videos,recruitments,tags:(tagsResult.data||[]).map(tag=>tag.label)};
 }

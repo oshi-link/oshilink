@@ -3,6 +3,7 @@ import {samplePoster,mountPosterCarousel} from './posters.mjs';
 import {supabase} from './supabase-client.mjs';
 import {loadPublicData} from './public-data.mjs';
 import {savedEventState,toggleSavedEvent} from './saved-content.mjs';
+import {sendRecruitmentInterest} from './matching.mjs';
 const $=id=>document.getElementById(id);
 const demoMode=new URLSearchParams(location.search).get('demo')==='1';
 if(demoMode){$('demo-control').hidden=false;$('demo').checked=true;}
@@ -36,9 +37,10 @@ function renderRecruitments(){
   const organizer=document.createElement('p');organizer.textContent=`主催：${item.organizer}`;
   const concept=document.createElement('p');concept.textContent=item.concept||'詳しい募集内容は主催者へご確認ください。';
   const actions=document.createElement('div');actions.className='recruitment-actions';
-  const interest=document.createElement('a');interest.className='primary';interest.href='./account.html#login';interest.textContent='ログインして興味を伝える ↗';actions.append(interest);
+  const interest=document.createElement('button'),status=document.createElement('p');interest.type='button';interest.className='primary';interest.textContent=item.acceptingInterest?'出演に興味あり':'現在は受付していません';interest.disabled=!item.acceptingInterest;status.className='quiet';status.setAttribute('role','status');
+  interest.onclick=async()=>{interest.disabled=true;status.textContent='送信しています…';try{await sendRecruitmentInterest(supabase,item.id);interest.textContent='送信済み';status.textContent='主催者へ興味を通知しました。具体的な相談はXのDMで行ってください。';}catch(error){status.textContent=error.message;interest.disabled=false;}};actions.append(interest);
   if(item.organizerX){const x=document.createElement('a');x.className='outline';x.href=item.organizerX;x.target='_blank';x.rel='noopener noreferrer';x.textContent='主催者のXを見る ↗';actions.append(x);}
-  article.append(meta,title,organizer,concept,actions);list.append(article);
+  article.append(meta,title,organizer,concept,actions,status);list.append(article);
  }
 }
 function moveMonth(delta){const d=new Date(year,month+delta,1);year=d.getFullYear();month=d.getMonth();selected=dateKey(year,month,1);renderCalendar();}

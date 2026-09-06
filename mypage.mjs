@@ -4,7 +4,7 @@ import {buildProfilePayload,saveMyProfiles} from './profile-save.mjs';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
-import {buildRecruitment,saveRecruitment,publishRecruitment} from './matching.mjs';
+import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead} from './matching.mjs';
 const $ = id => document.getElementById(id);
 window.oshilinkSupabase=supabase;
 let sessionLoggedIn=false;
@@ -92,7 +92,37 @@ function syncRoles() {
   $('profile-form').querySelector('[type="submit"]').disabled = !selected.length;
 }
 document.querySelectorAll('.role-picker input').forEach(input => input.addEventListener('change', syncRoles));
-document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {selectPanel(button.dataset.panel);if(button.dataset.panel==='manage')renderManagement();}));
+document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {selectPanel(button.dataset.panel);if(button.dataset.panel==='manage')renderManagement();if(button.dataset.panel==='matching')renderMatching();}));
+
+async function renderMatching(){
+  const status=$('matching-status'),profiles=$('matching-profiles'),notifications=$('notification-list');profiles.replaceChildren();notifications.replaceChildren();
+  if(!sessionLoggedIn){status.textContent='受付設定と通知を見るにはログインしてください。';return;}
+  status.textContent='マッチング情報を読み込んでいます…';
+  try{
+    const data=await loadMatchingDashboard(window.oshilinkSupabase);
+    if(!data.profiles.length)profiles.append(Object.assign(document.createElement('p'),{className:'quiet',textContent:'歌い手または主催者プロフィールを作成してください。'}));
+    for(const profile of data.profiles){
+      const row=document.createElement('div');row.className='matching-row';
+      const text=document.createElement('p');const kind=profile.kind==='singer'?'歌い手':'主催者';text.textContent=`${kind}｜${profile.display_name}｜${profile.matching_open?'受付中':'受付OFF'}`;
+      const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=profile.matching_open?'受付をOFFにする':'受付をONにする';
+      if(!profile.matching_open&&(!profile.is_public||!profile.x_url)){button.disabled=true;button.title='プロフィールの公開とX URLの登録が必要です。';}
+      button.onclick=async()=>{button.disabled=true;status.textContent='受付設定を変更しています…';try{await setMatchingOpen(window.oshilinkSupabase,profile.id,!profile.matching_open);await renderMatching();}catch(error){status.textContent=error.message;button.disabled=false;}};
+      row.append(text,button);profiles.append(row);
+    }
+    if(!data.notifications.length)notifications.append(Object.assign(document.createElement('p'),{className:'quiet',textContent:'新しい通知はありません。'}));
+    for(const item of data.notifications){
+      const article=document.createElement('article');article.className='notification-card';if(!item.read_at)article.dataset.unread='true';
+      const title=document.createElement('h4');title.textContent=item.direction==='singer_to_recruitment'?`${item.senderName}さんが募集に興味を示しました`:`${item.senderName}さんから出演相談があります`;
+      const time=document.createElement('p');time.className='quiet';time.textContent=new Date(item.created_at).toLocaleString('ja-JP');article.append(title,time);
+      if(item.state==='cancelled')article.append(Object.assign(document.createElement('p'),{textContent:'この興味は取り消されています。'}));
+      else if(item.senderX){const link=document.createElement('a');link.className='primary';link.href=item.senderX;link.target='_blank';link.rel='noopener noreferrer';link.textContent='相手のXを開く ↗';article.append(link);}
+      if(!item.read_at){const read=document.createElement('button');read.type='button';read.className='text-link';read.textContent='既読にする';read.onclick=async()=>{read.disabled=true;try{await markNotificationRead(window.oshilinkSupabase,item.id);await renderMatching();}catch(error){status.textContent=error.message;read.disabled=false;}};article.append(read);}
+      notifications.append(article);
+    }
+    status.textContent='出演決定ではありません。具体的な確認や相談はXのDMで行ってください。';
+  }catch(error){status.textContent=error.message;}
+}
+$('refresh-matching').addEventListener('click',renderMatching);
 
 async function renderManagement(){
   const status=$('management-status'),list=$('management-list');list.replaceChildren();
