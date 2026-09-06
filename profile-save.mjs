@@ -32,3 +32,34 @@ export async function saveMyProfiles(client,profiles){
   if(error)throw new Error('プロフィールを保存できませんでした。',{cause:error});
   return {saved:true,userId:authData.user.id};
 }
+
+export async function loadMyProfiles(client){
+  if(!client?.auth?.getUser || !client?.schema)throw new TypeError('Supabase接続が必要です。');
+  const {data:authData,error:authError}=await client.auth.getUser();
+  if(authError || !authData?.user)throw new Error('ログインが必要です。',{cause:authError});
+  const {data,error}=await client.schema('oshilink_v2').from('profiles')
+    .select('kind,display_name,bio,cover_message,region,style,started_on,brand,concept,x_url,lp_url')
+    .eq('owner_id',authData.user.id);
+  if(error)throw new Error('保存済みのプロフィールを読み込めませんでした。',{cause:error});
+  return data||[];
+}
+
+export function profileFormValues(profiles=[]){
+  const byKind=Object.fromEntries(profiles.map(profile=>[profile.kind,profile]));
+  const singer=byKind.singer||{};
+  const organizer=byKind.organizer||{};
+  const listener=byKind.listener||{};
+  const shared=profiles.find(profile=>profile.kind==='singer')
+    || profiles.find(profile=>profile.kind==='organizer')
+    || profiles.find(profile=>profile.kind==='listener') || {};
+  const creator=profiles.find(profile=>profile.kind==='singer')
+    || profiles.find(profile=>profile.kind==='organizer') || {};
+  return {
+    kinds:profiles.map(profile=>profile.kind).filter(kind=>allowedKinds.has(kind)),
+    values:{
+      singerName:singer.display_name||'',started:singer.started_on||'',singerRegion:singer.region||'',style:singer.style||'',
+      organizerName:organizer.display_name||'',brand:organizer.brand||'',organizerRegion:organizer.region||'',concept:organizer.concept||'',
+      listenerName:listener.display_name||'',bio:shared.bio||'',cover:creator.cover_message||'',x:creator.x_url||'',lp:creator.lp_url||''
+    }
+  };
+}
