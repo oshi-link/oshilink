@@ -1,6 +1,7 @@
 import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './mypage-rules.mjs?v=required-3';
 import {bindImagePreview} from './local-image-preview.mjs';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
+import {saveSelectedProfileImages} from './profile-images.mjs?v=save-1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
@@ -47,7 +48,7 @@ for(const section of document.querySelectorAll('[data-role]')){
   const role=section.dataset.role;
   const editor=document.createElement('fieldset');editor.className='profile-image-editor';
   const legend=document.createElement('legend');legend.textContent='プロフィール画像（任意）';editor.append(legend);
-  const help=document.createElement('p');help.className='quiet';help.textContent='画像を選ぶと、この画面内で見え方を確認できます。JPEG・PNG・WebP、10MBまで。保存・アップロードは行いません。';editor.append(help);
+  const help=document.createElement('p');help.className='quiet';help.textContent='画像を選ぶと見え方を確認できます。JPEG・PNG・WebP、5MBまで。プロフィールと一緒に保存します。';editor.append(help);
   for(const [kind,title] of [['avatar','アイコン'],['cover','カバー画像']]){
     const block=document.createElement('div');block.className='image-choice';
     const label=document.createElement('label');label.className='field';label.textContent=title;
@@ -287,7 +288,7 @@ $('save-review').addEventListener('click',async()=>{
   const button=$('save-review'),status=$('save-review-status');
   button.disabled=true;status.dataset.state='';status.textContent='保存しています…';
   try{
-    if(pendingProfiles)await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);
+    if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),await loadMyProfiles(window.oshilinkSupabase));}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
     else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
