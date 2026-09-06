@@ -1,0 +1,4 @@
+.artist-icon{overflow:hidden}
+.artist-icon img,.avatar img{width:100%;height:100%;object-fit:cover}
+.profile-cover{background-position:center;background-size:cover}
+.avatar{overflow:hidden}
