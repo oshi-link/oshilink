@@ -1,7 +1,7 @@
 import {dateKey,monthCells,filterVideos,upcomingRegions} from './calendar.mjs?v=regions-1';
-import {samplePoster,mountPosterCarousel} from './posters.mjs';
+import {samplePoster,mountPosterCarousel} from './posters.mjs?v=event-display-1';
 import {supabase} from './supabase-client.mjs';
-import {loadPublicData} from './public-data.mjs';
+import {loadPublicData} from './public-data.mjs?v=event-display-1';
 import {savedEventState,toggleSavedEvent,loadFavoriteProfileIds,prioritizeFavoriteProfiles} from './saved-content.mjs';
 import {sendRecruitmentInterest} from './matching.mjs';
 const $=id=>document.getElementById(id);
