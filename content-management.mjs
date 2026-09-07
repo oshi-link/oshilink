@@ -6,7 +6,7 @@ export async function loadMyContent(client){
   const [profiles,videos,events]=await Promise.all([
     db.from('profiles').select('id,kind,display_name,is_public').order('created_at'),
     db.from('videos').select('id,title,is_public').order('created_at',{ascending:false}),
-    db.from('events').select('id,title,event_date,is_public').eq('creator_id',data.user.id).order('event_date',{ascending:false})
+    db.from('events').select('id,title,event_date,region,venue,doors,starts,state,description,price_text,ticket_url,is_public').eq('creator_id',data.user.id).order('event_date',{ascending:false})
   ]);
   const failed=[profiles,videos,events].find(result=>result.error);
   if(failed)throw new Error('投稿一覧を取得できませんでした。',{cause:failed.error});
@@ -24,4 +24,14 @@ export async function publishMyEvent(client,id){
   const {error}=await client.schema('oshilink_v2').rpc('publish_my_event',{p_event_id:id});
   if(error)throw new Error('ライブを公開できませんでした。',{cause:error});
   return {id,is_public:true};
+}
+
+export async function updateMyEvent(client,id,post){
+  const {error}=await client.schema('oshilink_v2').rpc('update_my_event',{
+    p_event_id:id,p_title:post.title,p_event_date:post.date,p_region:post.region,p_venue:post.venue,
+    p_doors:post.doors,p_starts:post.starts,p_state:post.state,p_description:post.description,
+    p_price_text:post.price,p_ticket_url:post.ticket
+  });
+  if(error)throw new Error('ライブを更新できませんでした。',{cause:error});
+  return {saved:true,eventId:id,joined:false,updated:true};
 }
