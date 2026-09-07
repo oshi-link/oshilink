@@ -35,3 +35,9 @@ export async function updateMyEvent(client,id,post){
   if(error)throw new Error('ライブを更新できませんでした。',{cause:error});
   return {saved:true,eventId:id,joined:false,updated:true};
 }
+
+export async function deleteMyEvent(client,id){
+  const {error}=await client.schema('oshilink_v2').rpc('delete_my_event',{p_event_id:id});
+  if(error)throw new Error(error.code==='23503'?'ほかの出演者が参加しているライブは削除できません。運営へご連絡ください。':'ライブを削除できませんでした。',{cause:error});
+  return {id,deleted:true};
+}
