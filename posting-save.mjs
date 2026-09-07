@@ -49,7 +49,7 @@ export function buildLivePost(values){
 
 export async function findEventCandidates(client,post){
   if(!client?.schema)return [];
-  const {data,error}=await client.schema('oshilink_v2').from('events').select('id,title,event_date,region,venue,starts,state').eq('event_date',post.date).eq('title_key',compactEventTitle(post.title)).eq('is_public',true).eq('moderated_hidden',false);
+  const {data,error}=await client.schema('oshilink_v2').from('events').select('id,title,event_date,region,venue,starts,state').eq('event_date',post.date).eq('title_key',compactEventTitle(post.title)).eq('venue',post.venue).eq('starts',post.starts).eq('is_public',true).eq('moderated_hidden',false);
   if(error)throw new Error('登録済みライブを確認できませんでした。',{cause:error});
   return data||[];
 }
