@@ -294,9 +294,14 @@ $('save-review').addEventListener('click',async()=>{
     let liveResult=null;
     if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);const profiles=await loadMyProfiles(window.oshilinkSupabase);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
-    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){status.dataset.state='error';status.textContent=`ライブ情報は保存しましたが、フライヤーだけ保存できませんでした。${error.message}`;return;}}}
+    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){liveResult.flyerError=error.message;}}}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
     status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?(liveResult.joined?'既存ライブへ出演者として追加しました。登録済みのフライヤーは変更していません。':liveResult.flyer?.saved?'ライブ情報とフライヤーを非公開で保存しました。':'ライブ情報を非公開で保存しました。'):pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールと画像を保存しました。新しいプロフィールは公開されます。';
+    if(pendingLive){
+      await renderManagement();selectPanel('manage');$('review-dialog').close();
+      $('management-status').dataset.state=liveResult.flyerError?'error':'success';
+      $('management-status').textContent=liveResult.flyerError?`ライブ情報は保存しました。フライヤーだけ保存できませんでした。${liveResult.flyerError}`:liveResult.joined?'既存ライブへ出演者として追加しました。':'ライブ情報を保存しました。「公開する」を押すとホームのカレンダーに表示されます。';
+    }
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
     button.disabled=false;
