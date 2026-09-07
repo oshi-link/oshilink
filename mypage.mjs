@@ -4,7 +4,7 @@ import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} fro
 import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-2';
 import {saveSelectedEventFlyer} from './event-flyer.mjs?v=1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
-import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
+import {loadMyContent,setContentPublic,publishMyEvent,updateMyEvent} from './content-management.mjs?v=event-edit-1';
 import {supabase} from './supabase-client.mjs';
 import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead,cancelInterest} from './matching.mjs';
 const $ = id => document.getElementById(id);
@@ -76,6 +76,7 @@ let pendingProfiles=null;
 let pendingVideo=null;
 let pendingLive=null;
 let pendingRecruitment=null;
+let editingEventId=null;
 function selectPanel(panel) {
   document.querySelectorAll('[data-panel]').forEach(button => {
     const selected = button.dataset.panel === panel;
@@ -175,7 +176,13 @@ async function renderManagement(){
         const row=document.createElement('div');row.className='management-item';const text=document.createElement('p');text.textContent=`${item.display_name||item.title}${item.event_date?'｜'+item.event_date:''}｜${item.is_public?'公開中':'非公開'}`;
         const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=['events','recruitments'].includes(type)?(item.is_public?'公開済み':'公開する'):(item.is_public?'非公開にする':'公開する');button.disabled=['events','recruitments'].includes(type)&&item.is_public;
         button.addEventListener('click',async()=>{button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events')await publishMyEvent(window.oshilinkSupabase,item.id);else if(type==='recruitments')await publishRecruitment(window.oshilinkSupabase,item.id);else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();}catch(error){status.textContent=error.message;button.disabled=false;}});
-        row.append(text,button);section.append(row);
+        row.append(text);
+        if(type==='events'){
+          const edit=document.createElement('button');edit.type='button';edit.className='outline';edit.textContent='編集する';
+          edit.onclick=()=>{editingEventId=item.id;const form=$('live-form'),values={title:item.title,date:item.event_date,region:item.region,venue:item.venue,doors:String(item.doors||'').slice(0,5),time:String(item.starts||'').slice(0,5),status:{scheduled:'開催予定',postponed:'延期',cancelled:'中止'}[item.state]||'開催予定',description:item.description||'',price:item.price_text||'',ticket:item.ticket_url||''};for(const [name,value] of Object.entries(values)){const field=form.elements.namedItem(name);if(field)field.value=value;}selectPanel('live');form.scrollIntoView({behavior:'smooth',block:'start'});$('flyer-notice').textContent='登録済みのフライヤーを変更しない場合は、画像を選ばずに保存してください。';};
+          row.append(edit);
+        }
+        row.append(button);section.append(row);
       }
       list.append(section);
     }
@@ -246,7 +253,7 @@ document.querySelectorAll('.studio form').forEach(form => {
     }):null;
     pendingLive=form.id==='live-form'?buildLivePost(Object.fromEntries(new FormData(form))):null;
     pendingRecruitment=form.id==='recruitment-form'?buildRecruitment(Object.fromEntries(new FormData(form))):null;
-    if(pendingLive){
+    if(pendingLive&&!editingEventId){
       const note=document.createElement('section');note.className='event-candidates';
       const candidates=sessionLoggedIn?await findEventCandidates(window.oshilinkSupabase,pendingLive):[];
       const heading=document.createElement('h3');heading.textContent=candidates.length?'同じライブかもしれない候補があります':'同じ日・同じ表記の公開ライブは見つかりませんでした';note.append(heading);
@@ -261,7 +268,7 @@ document.querySelectorAll('.studio form').forEach(form => {
     }
     const saveable=Boolean(pendingProfiles||pendingVideo||pendingLive||pendingRecruitment);
     $('save-review').hidden=!saveable;
-    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?'ライブ情報を保存':pendingRecruitment?'出演者募集を保存':'プロフィールを保存';
+    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?(editingEventId?'ライブ情報を更新':'ライブ情報を保存'):pendingRecruitment?'出演者募集を保存':'プロフィールを保存';
     $('save-review').disabled=!saveable || !sessionLoggedIn;
     $('save-review-status').hidden=!saveable;
     $('save-review-status').dataset.state='';
@@ -294,13 +301,14 @@ $('save-review').addEventListener('click',async()=>{
     let liveResult=null;
     if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);const profiles=await loadMyProfiles(window.oshilinkSupabase);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
-    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){liveResult.flyerError=error.message;}}}
+    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=editingEventId?await updateMyEvent(window.oshilinkSupabase,editingEventId,pendingLive):await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){liveResult.flyerError=error.message;}}}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
     status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?(liveResult.joined?'既存ライブへ出演者として追加しました。登録済みのフライヤーは変更していません。':liveResult.flyer?.saved?'ライブ情報とフライヤーを非公開で保存しました。':'ライブ情報を非公開で保存しました。'):pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールと画像を保存しました。新しいプロフィールは公開されます。';
     if(pendingLive){
       await renderManagement();selectPanel('manage');$('review-dialog').close();
       $('management-status').dataset.state=liveResult.flyerError?'error':'success';
-      $('management-status').textContent=liveResult.flyerError?`ライブ情報は保存しました。フライヤーだけ保存できませんでした。${liveResult.flyerError}`:liveResult.joined?'既存ライブへ出演者として追加しました。':'ライブ情報を保存しました。「公開する」を押すとホームのカレンダーに表示されます。';
+      $('management-status').textContent=liveResult.flyerError?`ライブ情報は保存しました。フライヤーだけ保存できませんでした。${liveResult.flyerError}`:liveResult.joined?'既存ライブへ出演者として追加しました。':liveResult.updated?'ライブ情報を更新しました。公開状態は維持されています。':'ライブ情報を保存しました。「公開する」を押すとホームのカレンダーに表示されます。';
+      editingEventId=null;
     }
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
