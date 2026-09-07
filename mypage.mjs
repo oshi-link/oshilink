@@ -2,6 +2,7 @@ import { voiceTags, tagDisabled, validFlyer, allowedPanels, lpIntro } from './my
 import {bindImagePreview} from './local-image-preview.mjs?v=crop-dialog-2';
 import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} from './profile-save.mjs?v=prefill-1';
 import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-2';
+import {saveSelectedEventFlyer} from './event-flyer.mjs?v=1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
 import {loadMyContent,setContentPublic,publishMyEvent} from './content-management.mjs';
 import {supabase} from './supabase-client.mjs';
@@ -43,6 +44,7 @@ $('logout-button').addEventListener('click',async()=>{
 
 await syncSession();
 $('live-form').querySelector('.quiet:last-child').textContent='ログイン後、同じ日・同じ表記の公開ライブを確認し、新規登録または出演追加を選べます。新規登録は非公開状態で保存します。';
+$('flyer-input').closest('label').nextElementSibling.textContent='JPEG・PNG・WebP、10MBまで。画像全体を切り取らずに保存し、公開後はカレンダーとライブ詳細に表示します。';
 const imageResets=[];
 for(const section of document.querySelectorAll('[data-role]')){
   const role=section.dataset.role;
@@ -289,11 +291,12 @@ $('save-review').addEventListener('click',async()=>{
   const button=$('save-review'),status=$('save-review-status');
   button.disabled=true;status.dataset.state='';status.textContent='保存しています…';
   try{
+    let liveResult=null;
     if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);const profiles=await loadMyProfiles(window.oshilinkSupabase);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
-    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);}
+    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){status.dataset.state='error';status.textContent=`ライブ情報は保存しましたが、フライヤーだけ保存できませんでした。${error.message}`;return;}}}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
-    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?'ライブ情報を非公開で保存、または既存ライブへ出演追加しました。':pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールと画像を保存しました。新しいプロフィールは公開されます。';
+    status.dataset.state='success';status.textContent=pendingVideo?'歌ってみたを非公開で保存しました。':pendingLive?(liveResult.joined?'既存ライブへ出演者として追加しました。登録済みのフライヤーは変更していません。':liveResult.flyer?.saved?'ライブ情報とフライヤーを非公開で保存しました。':'ライブ情報を非公開で保存しました。'):pendingRecruitment?'出演者募集を非公開で保存しました。投稿管理から公開できます。':'プロフィールと画像を保存しました。新しいプロフィールは公開されます。';
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
     button.disabled=false;
