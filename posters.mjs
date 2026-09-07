@@ -1,9 +1,8 @@
 export function upcomingPosters(events, now = new Date()) {
-  const limit = now.getTime() + 30 * 86400000;
   const seen = new Set();
   return events.filter(event => {
     const start = Date.parse(`${event.date}T${event.time || '23:59'}:00+09:00`);
-    if (!event.poster || event.status !== '開催予定' || event.public === false || !Number.isFinite(start) || start < now.getTime() || start > limit || seen.has(event.id)) return false;
+    if (!event.poster || event.status !== '開催予定' || event.public === false || !Number.isFinite(start) || start < now.getTime() || seen.has(event.id)) return false;
     seen.add(event.id); return true;
   }).sort((a,b)=>`${a.date} ${a.time||'23:59'}`.localeCompare(`${b.date} ${b.time||'23:59'}`)).slice(0,6);
 }
