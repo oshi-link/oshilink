@@ -55,7 +55,8 @@ if(/^[0-9a-f-]{36}$/i.test(realId||'')){
     const live=$('live');live.querySelectorAll('.profile-event').forEach(node=>node.remove());for(const event of data.events.filter(item=>item.performerLinks.some(p=>p.id===profile.id))){const article=document.createElement('article');article.className='profile-event';const body=document.createElement('div'),title=document.createElement('h3'),meta=document.createElement('p');title.textContent=event.title;meta.textContent=`${event.date} · ${event.region} · ${event.venue} · 開演 ${event.time}`;body.append(title,meta);article.append(body);live.append(article);}if(!live.querySelector('.profile-event')){const empty=document.createElement('p');empty.textContent='公開中の出演予定はまだありません。';live.append(empty);}
     if(profile.lp_url){const link=document.createElement('a');link.className='primary';link.href=profile.lp_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='サービス・ご依頼案内を見る ↗';$('services').querySelector('button')?.replaceWith(link);}else{$('services').hidden=true;$('service-nav').hidden=true;}
     document.querySelector('.preview-options').hidden=true;
-  }catch(error){document.querySelector('.preview').textContent=error.message;document.querySelector('#profile').hidden=true;}
+    document.documentElement.classList.remove('loading-real-profile');
+  }catch(error){document.documentElement.classList.remove('loading-real-profile');document.querySelector('.preview').textContent=error.message;document.querySelector('#profile').hidden=true;}
 }else if(!sampleRequested){
   document.querySelector('.preview').textContent='プロフィールが指定されていません。';
   document.querySelector('#profile').hidden=true;
