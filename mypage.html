@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ja">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>マイページ｜OshiLink</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./account.css"><link rel="stylesheet" href="./mypage.css?v=profile-save-9"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>マイページ｜OshiLink</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./account.css"><link rel="stylesheet" href="./mypage.css?v=event-manage-2"></head>
 <body>
 <div class="preview" id="session-banner">ログイン状態を確認しています…</div>
 <header class="header wrap"><a href="./index.html" class="brand">Oshi<span>Link</span><small>歌い手と、ライブと、あなたをつなぐ。</small></a><a class="outline" href="./index.html">ホームへ戻る</a></header>
@@ -26,5 +26,6 @@
 <section id="manage-panel" class="studio-panel" hidden><p class="eyebrow">YOUR POSTS</p><h2>公開・非公開を管理</h2><p>プロフィールと歌ってみたは公開状態を切り替えられます。共有ライブは公開後、出演者への影響を避けるため運営への連絡なしに非公開へ戻せません。</p><button id="refresh-management" class="outline" type="button">一覧を更新</button><p id="management-status" class="quiet" role="status" aria-live="polite"></p><div id="management-list"></div></section>
 </main>
 <dialog id="review-dialog"><button id="close-review" class="dialog-close" aria-label="閉じる">×</button><h2>入力内容の確認</h2><p>画面内のプレビューです。保存すると新しいプロフィールは公開されます。</p><div id="review-content"></div><div class="review-actions"><button class="outline" id="back-to-edit">編集に戻る</button><button class="primary" id="save-review" type="button" disabled>プロフィールを保存</button></div><p id="save-review-status" class="quiet" role="status">ログイン接続後に保存できます。現在は確認画面です。</p></dialog>
-<script type="module" src="./mypage.mjs?v=event-edit-1"></script>
+<div id="save-toast" class="save-toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="./mypage.mjs?v=event-manage-2"></script>
 </body></html>
