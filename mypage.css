@@ -64,6 +64,10 @@
 .management-item { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #514856; }
 .management-item p { margin: 0; }
 .management-item button { flex: 0 0 auto; min-height: 44px; }
+.management-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.danger-button { border-color:#ff6b98 !important; color:#ffd4e2; }
+.save-toast { position:fixed; z-index:1000; top:24px; left:50%; transform:translateX(-50%); width:min(520px,calc(100% - 32px)); box-sizing:border-box; padding:16px 20px; border:1px solid #9ce8bd; border-radius:12px; background:#18241f; color:#d8ffe8; font-weight:700; text-align:center; box-shadow:0 12px 40px #0009; }
+.save-toast[data-state="error"] { border-color:#ff9fc9; background:#2b1823; color:#ffe0ee; }
 .matching-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid #514856; }
 .matching-row p { margin: 0; }
 .matching-row button { flex: 0 0 auto; min-height: 44px; }
