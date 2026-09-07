@@ -4,7 +4,7 @@ import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} fro
 import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-2';
 import {saveSelectedEventFlyer} from './event-flyer.mjs?v=1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
-import {loadMyContent,setContentPublic,publishMyEvent,updateMyEvent,deleteMyEvent} from './content-management.mjs?v=event-manage-2';
+import {loadMyContent,setContentPublic,publishMyEvent,updateMyEvent,deleteMyEvent} from './content-management.mjs?v=event-edit-3';
 import {supabase} from './supabase-client.mjs';
 import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead,cancelInterest} from './matching.mjs';
 const $ = id => document.getElementById(id);
@@ -76,8 +76,10 @@ let pendingProfiles=null;
 let pendingVideo=null;
 let pendingLive=null;
 let pendingRecruitment=null;
-let editingEventId=null;
+let pendingEventId=null;
 let saveToastTimer;
+const liveEditingStatus=document.createElement('div');liveEditingStatus.id='live-editing-status';liveEditingStatus.className='editing-status';liveEditingStatus.hidden=true;
+const liveEditingTitle=document.createElement('strong'),liveEditingText=document.createElement('span'),cancelLiveEdit=document.createElement('button');liveEditingTitle.id='live-editing-title';liveEditingText.textContent='このライブの内容とフライヤーを編集中です。';cancelLiveEdit.type='button';cancelLiveEdit.className='outline';cancelLiveEdit.textContent='新規投稿に戻る';liveEditingStatus.append(liveEditingTitle,liveEditingText,cancelLiveEdit);$('live-form').before(liveEditingStatus);
 function selectPanel(panel) {
   document.querySelectorAll('[data-panel]').forEach(button => {
     const selected = button.dataset.panel === panel;
@@ -94,6 +96,11 @@ function finishSuccessfulSave(panel,message){
   $(panel+'-panel').scrollIntoView({behavior:'smooth',block:'start'});
   showSaveToast(message);
 }
+function clearLiveEdit(){
+  const form=$('live-form');delete form.dataset.editingEventId;form.reset();liveEditingStatus.hidden=true;liveEditingTitle.textContent='';
+  const preview=$('flyer-preview');preview.hidden=true;preview.removeAttribute('src');preview.removeAttribute('data-saved');$('flyer-notice').textContent='';
+}
+cancelLiveEdit.addEventListener('click',clearLiveEdit);
 function syncRoles() {
   const selected = roles();
   const creator = selected.includes('singer') || selected.includes('organizer');
@@ -190,7 +197,7 @@ async function renderManagement(){
         row.append(text);
         if(type==='events'){
           const edit=document.createElement('button');edit.type='button';edit.className='outline';edit.textContent='編集する';
-          edit.onclick=()=>{editingEventId=item.id;const form=$('live-form'),values={title:item.title,date:item.event_date,region:item.region,venue:item.venue,doors:String(item.doors||'').slice(0,5),time:String(item.starts||'').slice(0,5),status:{scheduled:'開催予定',postponed:'延期',cancelled:'中止'}[item.state]||'開催予定',description:item.description||'',price:item.price_text||'',ticket:item.ticket_url||''};for(const [name,value] of Object.entries(values)){const field=form.elements.namedItem(name);if(field)field.value=value;}selectPanel('live');form.scrollIntoView({behavior:'smooth',block:'start'});$('flyer-notice').textContent='登録済みのフライヤーを変更しない場合は、画像を選ばずに保存してください。';};
+          edit.onclick=()=>{const form=$('live-form');form.dataset.editingEventId=item.id;const values={title:item.title,date:item.event_date,region:item.region,venue:item.venue,doors:String(item.doors||'').slice(0,5),time:String(item.starts||'').slice(0,5),status:{scheduled:'開催予定',postponed:'延期',cancelled:'中止'}[item.state]||'開催予定',description:item.description||'',price:item.price_text||'',ticket:item.ticket_url||''};for(const [name,value] of Object.entries(values)){const field=form.elements.namedItem(name);if(field)field.value=value;}form.elements.namedItem('flyer').value='';const preview=$('flyer-preview');preview.hidden=!item.flyer_url;if(item.flyer_url){preview.src=item.flyer_url;preview.dataset.saved='true';}else{preview.removeAttribute('src');preview.removeAttribute('data-saved');}liveEditingTitle.textContent=`「${item.title}」を編集中`;liveEditingStatus.hidden=false;selectPanel('live');form.scrollIntoView({behavior:'smooth',block:'start'});$('flyer-notice').textContent=item.has_flyer?(item.flyer_url?'現在のフライヤーを表示しています。画像を選び直さなければ、この画像を維持します。':'登録済みのフライヤーがあります。画像を選び直さなければ維持します。'):'フライヤーは未登録です。';};
           const remove=document.createElement('button');remove.type='button';remove.className='outline danger-button';remove.textContent='削除する';
           remove.onclick=async()=>{if(!confirm(`「${item.title}」を削除します。元に戻せません。よろしいですか？`))return;actions.querySelectorAll('button').forEach(control=>{control.disabled=true;});status.textContent='ライブを削除しています…';try{await deleteMyEvent(window.oshilinkSupabase,item.id);await renderManagement();showSaveToast('ライブを削除しました。');}catch(error){status.dataset.state='error';status.textContent=error.message;actions.querySelectorAll('button').forEach(control=>{control.disabled=false;});}};
           actions.append(edit,remove);
@@ -217,7 +224,7 @@ voiceTags.forEach(tag => {
 });
 const labels = { singerName: '活動名', started: '活動開始日', singerRegion: '活動地域', style: 'ライブスタイル', organizerName: '主催者名', brand: 'ライブブランド名', organizerRegion: '開催地域', concept: '募集内容・コンセプト', listenerName: 'リスナー名', bio: '紹介文', cover: 'カバー内のメッセージ', x: '公開X URL', lp: '専用LP URL', title: 'タイトル', url: '動画URL', description: '紹介・説明', tag: '歌声タグ', date: '開催日', eventDate:'開催予定日', region: '開催地域', venue: '会場', doors: '開場', time: '開演', status: '開催状態', price: '料金表示', ticket: 'チケットURL' };
 function appendReviewImage(container,source,title,kind){
-  if(!source || source.hidden || !source.complete || !source.naturalWidth || !source.src.startsWith('blob:'))return;
+  if(!source || source.hidden || !source.complete || !source.naturalWidth || !/^(blob:|https:)/.test(source.src))return;
   const figure=document.createElement('figure');figure.className='review-image';
   const caption=document.createElement('figcaption');caption.textContent=title;
   const frame=document.createElement('div');frame.className=kind==='flyer'?'review-flyer-frame':`local-image-frame local-image-${kind}`;
@@ -265,8 +272,9 @@ document.querySelectorAll('.studio form').forEach(form => {
       ...Object.fromEntries(new FormData(form)),tag:new FormData(form).getAll('tag')
     }):null;
     pendingLive=form.id==='live-form'?buildLivePost(Object.fromEntries(new FormData(form))):null;
+    pendingEventId=form.id==='live-form'?(form.dataset.editingEventId||null):null;
     pendingRecruitment=form.id==='recruitment-form'?buildRecruitment(Object.fromEntries(new FormData(form))):null;
-    if(pendingLive&&!editingEventId){
+    if(pendingLive&&!pendingEventId){
       const note=document.createElement('section');note.className='event-candidates';
       const candidates=sessionLoggedIn?await findEventCandidates(window.oshilinkSupabase,pendingLive):[];
       const heading=document.createElement('h3');heading.textContent=candidates.length?'同じライブかもしれない候補があります':'同じ日・同じ表記の公開ライブは見つかりませんでした';note.append(heading);
@@ -281,7 +289,7 @@ document.querySelectorAll('.studio form').forEach(form => {
     }
     const saveable=Boolean(pendingProfiles||pendingVideo||pendingLive||pendingRecruitment);
     $('save-review').hidden=!saveable;
-    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?(editingEventId?'ライブ情報を更新':'ライブ情報を保存'):pendingRecruitment?'出演者募集を保存':'プロフィールを保存';
+    $('save-review').textContent=pendingVideo?'歌ってみたを保存':pendingLive?(pendingEventId?'ライブ情報を更新':'ライブ情報を保存'):pendingRecruitment?'出演者募集を保存':'プロフィールを保存';
     $('save-review').disabled=!saveable || !sessionLoggedIn;
     $('save-review-status').hidden=!saveable;
     $('save-review-status').dataset.state='';
@@ -296,6 +304,7 @@ $('flyer-input').addEventListener('change', () => {
   if (imageUrl) URL.revokeObjectURL(imageUrl);
   const image = $('flyer-preview');
   image.hidden = true; image.removeAttribute('src');
+  image.removeAttribute('data-saved');
   $('flyer-notice').textContent = '';
   const file = $('flyer-input').files[0];
   if (!file) return;
@@ -314,12 +323,12 @@ $('save-review').addEventListener('click',async()=>{
     let liveResult=null;
     if(pendingProfiles){await saveMyProfiles(window.oshilinkSupabase,pendingProfiles);const profiles=await loadMyProfiles(window.oshilinkSupabase);await saveSelectedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);await showSavedProfileImages(window.oshilinkSupabase,$('profile-form'),profiles);}
     else if(pendingVideo)await saveMyVideo(window.oshilinkSupabase,pendingVideo);
-    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=editingEventId?await updateMyEvent(window.oshilinkSupabase,editingEventId,pendingLive):await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){liveResult.flyerError=error.message;}}}
+    else if(pendingLive){const selected=document.querySelector('input[name="existing-event"]:checked')?.value||null;liveResult=pendingEventId?await updateMyEvent(window.oshilinkSupabase,pendingEventId,pendingLive):await saveMyEvent(window.oshilinkSupabase,pendingLive,selected);if(!liveResult.joined){try{liveResult.flyer=await saveSelectedEventFlyer(window.oshilinkSupabase,liveResult.eventId,$('flyer-input'));}catch(error){liveResult.flyerError=error.message;}}}
     else if(pendingRecruitment)await saveRecruitment(window.oshilinkSupabase,pendingRecruitment);
     const savedPanel=pendingVideo?'video':pendingLive?'live':pendingRecruitment?'recruitment':'profile';
     const successMessage=pendingVideo?'歌ってみたを保存しました。':pendingLive?(liveResult.flyerError?`ライブ情報は保存しました。フライヤーだけ保存できませんでした。${liveResult.flyerError}`:liveResult.joined?'既存ライブへ出演者として追加しました。':liveResult.updated?'ライブ情報を更新しました。公開状態は維持されています。':liveResult.flyer?.saved?'ライブ情報とフライヤーを保存しました。':'ライブ情報を保存しました。'):pendingRecruitment?'出演者募集を保存しました。':'プロフィールと画像を保存しました。';
     status.dataset.state='success';status.textContent=successMessage;
-    if(pendingLive)editingEventId=null;
+    if(pendingLive){delete $('live-form').dataset.editingEventId;liveEditingStatus.hidden=true;liveEditingTitle.textContent='';pendingEventId=null;}
     finishSuccessfulSave(savedPanel,successMessage);
   }catch(error){
     status.dataset.state='error';status.textContent=error.message;
@@ -327,7 +336,7 @@ $('save-review').addEventListener('click',async()=>{
   }
 });
 $('review-dialog').addEventListener('close',()=>{
-  $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;pendingRecruitment=null;$('save-review').disabled=true;
+  $('review-content').replaceChildren();pendingProfiles=null;pendingVideo=null;pendingLive=null;pendingRecruitment=null;pendingEventId=null;$('save-review').disabled=true;
 });
 syncRoles();
 await restoreSavedProfiles();

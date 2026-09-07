@@ -10,7 +10,23 @@ export async function loadMyContent(client){
   ]);
   const failed=[profiles,videos,events].find(result=>result.error);
   if(failed)throw new Error('投稿一覧を取得できませんでした。',{cause:failed.error});
-  return {profiles:profiles.data||[],videos:videos.data||[],events:events.data||[]};
+  const ownedEvents=events.data||[];
+  const flyerByEvent=await loadOwnedEventFlyers(client,ownedEvents);
+  return {profiles:profiles.data||[],videos:videos.data||[],events:ownedEvents.map(event=>({...event,...flyerByEvent[event.id]}))};
+}
+
+export async function loadOwnedEventFlyers(client,events){
+  const ids=(events||[]).map(event=>event.id).filter(Boolean);
+  if(!ids.length)return {};
+  const references=await client.schema('oshilink_v2').from('event_images').select('event_id,object_name').in('event_id',ids);
+  if(references.error)throw new Error('登録済みのフライヤー情報を取得できませんでした。',{cause:references.error});
+  const result={};
+  for(const reference of references.data||[]){
+    result[reference.event_id]={has_flyer:true,flyer_url:null};
+    const signed=await client.storage?.from('oshilink-v2-images').createSignedUrl(reference.object_name,3600);
+    if(!signed?.error&&signed?.data?.signedUrl)result[reference.event_id].flyer_url=signed.data.signedUrl;
+  }
+  return result;
 }
 
 export async function setContentPublic(client,type,id,isPublic){
