@@ -12,7 +12,7 @@
 <main id="main">
 <section class="hero wrap">
  <div class="hero-copy"><p class="eyebrow">YOUR NEXT FAVORITE, ON STAGE.</p><h1>次の「好き」に、<br><em>会いに行こう。</em></h1><p class="intro">歌ってみたも、ライブの予定も。<br>歌い手の活動情報をまとめてチェック。<br>日付や地域から、気になるライブを見つけよう。</p><div class="actions"><a class="primary" href="#calendar">ライブを探す <span>↗</span></a><a class="text-link" href="#singers">歌い手を探す →</a></div><p class="quiet">公開情報は、登録せずにご覧いただけます。</p></div>
- <section class="poster-carousel" id="poster-carousel" aria-label="直近のライブポスター" aria-roledescription="カルーセル"><div class="poster-heading"><span>UPCOMING LIVE</span><span id="poster-count"></span></div><div id="poster-stage" class="poster-stage"></div><div id="poster-caption" class="poster-caption"></div><div class="poster-controls"><button id="poster-prev" aria-label="前のポスター">←</button><div id="poster-dots" class="poster-dots"></div><button id="poster-next" aria-label="次のポスター">→</button><button id="poster-pause">一時停止</button></div><p class="poster-note">ポスターを押すと全体を拡大表示できます。</p></section>
+ <section class="poster-carousel" id="poster-carousel" aria-label="直近のライブポスター" aria-roledescription="カルーセル" aria-busy="true"><div class="poster-heading"><span>UPCOMING LIVE</span><span id="poster-count">-- / --</span></div><div id="poster-stage" class="poster-stage">ライブ情報を読み込んでいます…</div><div id="poster-caption" class="poster-caption"></div><div class="poster-controls"><button id="poster-prev" aria-label="前のポスター" disabled>←</button><div id="poster-dots" class="poster-dots"></div><button id="poster-next" aria-label="次のポスター" disabled>→</button><button id="poster-pause" disabled>一時停止</button></div><p class="poster-note">ポスターを押すと全体を拡大表示できます。</p></section>
 </section>
 <div class="marquee" aria-hidden="true">FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span> FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE</div>
 <section class="section wrap" id="calendar">
@@ -27,6 +27,6 @@
 <footer class="wrap"><a class="brand" href="#">Oshi<span>Link</span></a><p>歌い手と、ライブと、あなたをつなぐ。</p><a href="mailto:d.oshilink@gmail.com">ご要望・お問い合わせ ↗</a><small>公開情報のみを表示します。</small></footer>
 <nav class="bottom-nav" aria-label="スマートフォンメニュー"><a href="#">ホーム</a><a href="#calendar">カレンダー</a><a href="#voices">探す</a><button data-account>マイページ</button></nav>
 <dialog id="dialog"><button id="close-dialog" class="dialog-close" aria-label="閉じる">×</button><div id="dialog-content"></div></dialog>
-<script type="module" src="./app.mjs?v=event-display-1"></script>
+<script type="module" src="./app.mjs?v=loading-state-1"></script>
 <script type="module" src="./artists.mjs?v=public-images-1"></script>
 </body></html>
