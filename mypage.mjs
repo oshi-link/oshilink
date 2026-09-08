@@ -100,6 +100,15 @@ function clearLiveEdit(){
   const form=$('live-form');delete form.dataset.editingEventId;form.reset();liveEditingStatus.hidden=true;liveEditingTitle.textContent='';
   const preview=$('flyer-preview');preview.hidden=true;preview.removeAttribute('src');preview.removeAttribute('data-saved');$('flyer-notice').textContent='';
 }
+function showExistingFlyer(item){
+  const preview=$('flyer-preview'),notice=$('flyer-notice');
+  preview.hidden=true;preview.removeAttribute('src');preview.removeAttribute('data-saved');
+  if(!item.has_flyer){notice.textContent='フライヤーは未登録です。';return;}
+  if(!item.flyer_url){notice.textContent='登録済みのフライヤーを読み込めません。画像を選び直してください。';return;}
+  preview.onload=()=>{preview.hidden=false;preview.dataset.saved='true';notice.textContent='現在のフライヤーを表示しています。画像を選び直さなければ、この画像を維持します。';};
+  preview.onerror=()=>{preview.hidden=true;preview.removeAttribute('src');preview.removeAttribute('data-saved');notice.textContent='登録済みのフライヤーを表示できません。画像を選び直してください。';};
+  preview.src=item.flyer_url;
+}
 cancelLiveEdit.addEventListener('click',clearLiveEdit);
 function syncRoles() {
   const selected = roles();
@@ -197,7 +206,7 @@ async function renderManagement(){
         row.append(text);
         if(type==='events'){
           const edit=document.createElement('button');edit.type='button';edit.className='outline';edit.textContent='編集する';
-          edit.onclick=()=>{const form=$('live-form');form.dataset.editingEventId=item.id;const values={title:item.title,date:item.event_date,region:item.region,venue:item.venue,doors:String(item.doors||'').slice(0,5),time:String(item.starts||'').slice(0,5),status:{scheduled:'開催予定',postponed:'延期',cancelled:'中止'}[item.state]||'開催予定',description:item.description||'',price:item.price_text||'',ticket:item.ticket_url||''};for(const [name,value] of Object.entries(values)){const field=form.elements.namedItem(name);if(field){field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));}}$('flyer-input').value='';const preview=$('flyer-preview');preview.hidden=!item.flyer_url;if(item.flyer_url){preview.src=item.flyer_url;preview.dataset.saved='true';}else{preview.removeAttribute('src');preview.removeAttribute('data-saved');}liveEditingTitle.textContent=`「${item.title}」を編集中`;liveEditingStatus.hidden=false;selectPanel('live');form.scrollIntoView({behavior:'smooth',block:'start'});$('flyer-notice').textContent=item.has_flyer?(item.flyer_url?'現在のフライヤーを表示しています。画像を選び直さなければ、この画像を維持します。':'登録済みのフライヤーがあります。画像を選び直さなければ維持します。'):'フライヤーは未登録です。';};
+          edit.onclick=()=>{const form=$('live-form');form.dataset.editingEventId=item.id;const values={title:item.title,date:item.event_date,region:item.region,venue:item.venue,doors:String(item.doors||'').slice(0,5),time:String(item.starts||'').slice(0,5),status:{scheduled:'開催予定',postponed:'延期',cancelled:'中止'}[item.state]||'開催予定',description:item.description||'',price:item.price_text||'',ticket:item.ticket_url||''};for(const [name,value] of Object.entries(values)){const field=form.elements.namedItem(name);if(field){field.value=value;field.dispatchEvent(new Event('input',{bubbles:true}));}}$('flyer-input').value='';showExistingFlyer(item);liveEditingTitle.textContent=`「${item.title}」を編集中`;liveEditingStatus.hidden=false;selectPanel('live');form.scrollIntoView({behavior:'smooth',block:'start'});};
           const remove=document.createElement('button');remove.type='button';remove.className='outline danger-button';remove.textContent='削除する';
           remove.onclick=async()=>{if(!confirm(`「${item.title}」を削除します。元に戻せません。よろしいですか？`))return;actions.querySelectorAll('button').forEach(control=>{control.disabled=true;});status.textContent='ライブを削除しています…';try{await deleteMyEvent(window.oshilinkSupabase,item.id);await renderManagement();showSaveToast('ライブを削除しました。');}catch(error){status.dataset.state='error';status.textContent=error.message;actions.querySelectorAll('button').forEach(control=>{control.disabled=false;});}};
           actions.append(edit,remove);
