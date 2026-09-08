@@ -4,9 +4,9 @@ import {buildProfilePayload,saveMyProfiles,loadMyProfiles,profileFormValues} fro
 import {saveSelectedProfileImages,showSavedProfileImages} from './profile-images.mjs?v=crop-dialog-2';
 import {saveSelectedEventFlyer} from './event-flyer.mjs?v=1';
 import {buildVideoPost,saveMyVideo,buildLivePost,findEventCandidates,saveMyEvent} from './posting-save.mjs';
-import {loadMyContent,setContentPublic,publishMyEvent,updateMyEvent,deleteMyEvent} from './content-management.mjs?v=event-edit-3';
+import {loadMyContent,setContentPublic,publishMyEvent,unpublishMyEvent,updateMyEvent,deleteMyEvent} from './content-management.mjs?v=visibility-1';
 import {supabase} from './supabase-client.mjs';
-import {buildRecruitment,saveRecruitment,publishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead,cancelInterest} from './matching.mjs';
+import {buildRecruitment,saveRecruitment,publishRecruitment,unpublishRecruitment,loadMatchingDashboard,setMatchingOpen,markNotificationRead,cancelInterest} from './matching.mjs';
 const $ = id => document.getElementById(id);
 window.oshilinkSupabase=supabase;
 let sessionLoggedIn=false;
@@ -201,8 +201,8 @@ async function renderManagement(){
       for(const item of items){
         const row=document.createElement('div');row.className='management-item';const text=document.createElement('p');text.textContent=`${item.display_name||item.title}${item.event_date?'｜'+item.event_date:''}｜${item.is_public?'公開中':'非公開'}`;
         const actions=document.createElement('div');actions.className='management-actions';
-        const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=['events','recruitments'].includes(type)?(item.is_public?'公開済み':'公開する'):(item.is_public?'非公開にする':'公開する');button.disabled=['events','recruitments'].includes(type)&&item.is_public;
-        button.addEventListener('click',async()=>{button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events')await publishMyEvent(window.oshilinkSupabase,item.id);else if(type==='recruitments')await publishRecruitment(window.oshilinkSupabase,item.id);else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();}catch(error){status.textContent=error.message;button.disabled=false;}});
+        const button=document.createElement('button');button.type='button';button.className='outline';button.textContent=item.is_public?'非公開にする':'公開する';
+        button.addEventListener('click',async()=>{if(type==='events'&&item.is_public&&!confirm(`「${item.title}」を非公開にします。\n出演者が複数いる場合も、ホームとカレンダーから非表示になります。登録内容は残ります。`))return;button.disabled=true;status.textContent='公開状態を変更しています…';try{if(type==='events'){if(item.is_public)await unpublishMyEvent(window.oshilinkSupabase,item.id);else await publishMyEvent(window.oshilinkSupabase,item.id);}else if(type==='recruitments'){if(item.is_public)await unpublishRecruitment(window.oshilinkSupabase,item.id);else await publishRecruitment(window.oshilinkSupabase,item.id);}else await setContentPublic(window.oshilinkSupabase,type,item.id,!item.is_public);await renderManagement();showSaveToast(item.is_public?'非公開にしました。':'公開しました。');}catch(error){status.textContent=error.message;button.disabled=false;}});
         row.append(text);
         if(type==='events'){
           const edit=document.createElement('button');edit.type='button';edit.className='outline';edit.textContent='編集する';

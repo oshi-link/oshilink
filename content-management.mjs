@@ -42,6 +42,12 @@ export async function publishMyEvent(client,id){
   return {id,is_public:true};
 }
 
+export async function unpublishMyEvent(client,id){
+  const {error}=await client.schema('oshilink_v2').rpc('unpublish_my_event',{p_event_id:id});
+  if(error)throw new Error('ライブを非公開にできませんでした。',{cause:error});
+  return {id,is_public:false};
+}
+
 export async function updateMyEvent(client,id,post){
   const {error}=await client.schema('oshilink_v2').rpc('update_my_event',{
     p_event_id:id,p_title:post.title,p_event_date:post.date,p_region:post.region,p_venue:post.venue,

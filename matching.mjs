@@ -28,6 +28,12 @@ export async function publishRecruitment(client,id){
   return result.data;
 }
 
+export async function unpublishRecruitment(client,id){
+  const result=await client.schema(schema).from('recruitments').update({is_public:false}).eq('id',id).select('id').single();
+  if(result.error)throw new Error('出演者募集を非公開にできませんでした。',{cause:result.error});
+  return result.data;
+}
+
 export async function setMatchingOpen(client,profileId,open){
   const {error}=await client.schema(schema).rpc('set_matching_open',{p_profile_id:profileId,p_open:Boolean(open)});
   if(error)throw new Error(open?'受付を開始できませんでした。プロフィールを公開し、XのURLを登録してください。':'受付を停止できませんでした。',{cause:error});
