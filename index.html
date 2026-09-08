@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="歌い手のプロフィール、歌ってみた、ライブ情報をまとめて探せるOshiLink。">
-  <title>OshiLink｜歌い手とライブを探す</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./public-images.css"><link rel="stylesheet" href="./performer-links.css"><link rel="stylesheet" href="./recruitment.css">
+  <title>OshiLink｜歌い手とライブを探す</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./posters.css"><link rel="stylesheet" href="./artists.css"><link rel="stylesheet" href="./public-images.css"><link rel="stylesheet" href="./performer-links.css"><link rel="stylesheet" href="./recruitment.css"><link rel="stylesheet" href="./marquee.css">
 </head>
 <body>
 <a class="skip" href="#main">本文へ</a>
@@ -14,7 +14,7 @@
  <div class="hero-copy"><p class="eyebrow">YOUR NEXT FAVORITE, ON STAGE.</p><h1>次の「好き」に、<br><em>会いに行こう。</em></h1><p class="intro">歌ってみたも、ライブの予定も。<br>歌い手の活動情報をまとめてチェック。<br>日付や地域から、気になるライブを見つけよう。</p><div class="actions"><a class="primary" href="#calendar">ライブを探す <span>↗</span></a><a class="text-link" href="#singers">歌い手を探す →</a></div><p class="quiet">公開情報は、登録せずにご覧いただけます。</p></div>
  <section class="poster-carousel" id="poster-carousel" aria-label="直近のライブポスター" aria-roledescription="カルーセル" aria-busy="true"><div class="poster-heading"><span>UPCOMING LIVE</span><span id="poster-count">-- / --</span></div><div id="poster-stage" class="poster-stage">ライブ情報を読み込んでいます…</div><div id="poster-caption" class="poster-caption"></div><div class="poster-controls"><button id="poster-prev" aria-label="前のポスター" disabled>←</button><div id="poster-dots" class="poster-dots"></div><button id="poster-next" aria-label="次のポスター" disabled>→</button><button id="poster-pause" disabled>一時停止</button></div><p class="poster-note">ポスターを押すと全体を拡大表示できます。</p></section>
 </section>
-<div class="marquee" aria-hidden="true">FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span> FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE</div>
+<div class="marquee" aria-hidden="true"><div class="marquee-track"><div class="marquee-line">FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span> FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span></div><div class="marquee-line">FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span> FIND YOUR VOICE <span>✦</span> MEET YOUR STAGE <span>✦</span></div></div></div>
 <section class="section wrap" id="calendar">
  <div class="section-heading"><div><p class="eyebrow">LIVE CALENDAR</p><h2>会いたい日を、見つけよう。</h2><p>日付を選んで、その日のライブをチェック。</p></div><label class="region-label">開催地域<select id="region"><option value="">すべての地域</option></select></label></div>
  <div class="calendar-layout"><div class="calendar-panel"><div class="month-bar"><h3 id="month"></h3><div><button id="previous" aria-label="前の月">←</button><button id="today">今日</button><button id="next" aria-label="次の月">→</button></div></div><div class="weekdays" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div><div id="days" class="days" aria-label="日付を選択"></div><p class="calendar-note">● ライブあり　 /　出演者が複数でも、1公演は1件で表示</p></div><div class="event-panel"><div class="list-title"><h3 id="selected-day"></h3><span id="count"></span></div><div id="event-list" aria-live="polite"></div></div></div>
@@ -30,3 +30,4 @@
 <script type="module" src="./app.mjs?v=loading-state-1"></script>
 <script type="module" src="./artists.mjs?v=public-images-1"></script>
 </body></html>
+
